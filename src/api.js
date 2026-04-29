@@ -1,9 +1,9 @@
 var StackTraceable = require('./stacktraceable');
 
-exports.API_BASE_URL = "https://api-v2launch.trakt.tv";
+exports.API_BASE_URL = "https://api.trakt.tv";
 
 // please use your own API KEY
-exports.CLIENT_ID = "c15b4e3a7d634cdc18741f1a03c5e13baf004459326f5df27f205f993df4d281";
+exports.CLIENT_ID = "c752231dbc78daf7c76d0b3fb2b7a18403e0a2c9b968bcbee5f79a0268ac5ea0";
 
 var Api = function() {
     return {
