@@ -76,6 +76,41 @@ var imageDimensions = {
  * Exported Functions
  ******************************************************************************/
 
+// Trakt's image API has changed shape over time. The current API returns
+// arrays of CDN URLs (without protocol), e.g.
+//   images.poster = ["media.trakt.tv/.../poster.jpg.webp", ...]
+// Older versions returned an object keyed by size, and at one point images
+// were dropped entirely. These helpers tolerate all three shapes so the
+// plugin never crashes while reading image fields.
+exports.images = function (obj) {
+    return (obj && obj.images) || {};
+};
+
+exports.img = function (obj, type, useDefault) {
+    return exports.toImageSet(exports.images(obj)[type], type, useDefault);
+};
+
+exports.firstUrl = function (obj, type) {
+    var v = exports.images(obj)[type];
+    if (Array.isArray(v)) {
+        for (var i = 0; i < v.length; i++) {
+            if (v[i]) return ensureProtocol(v[i]);
+        }
+        return null;
+    }
+    if (v && typeof v === 'object') {
+        return v.medium || v.full || v.thumb || null;
+    }
+    return null;
+};
+
+function ensureProtocol(url) {
+    if (typeof url !== 'string') return url;
+    if (url.indexOf('://') !== -1) return url;
+    if (url.indexOf('//') === 0) return 'https:' + url;
+    return 'https://' + url;
+}
+
 exports.formatNumber = function (num, numDigits) {
     var output = num + '';
     while (output.length < numDigits) {
@@ -110,14 +145,36 @@ exports.prettyStatus = function (status) {
 
 exports.toImageSet = function (items, type, useDefault) {
     if (useDefault === null || useDefault === undefined) useDefault = true;
+    if (!items) items = {};
 
     var images = [];
-    for (var size in items) {
-        var dimensions = imageDimensions[type][size];
-        var image = dimensions;
-        if (items[size]) {
-            image.url = items[size];
-            images.push(image);
+    var dimensionsForType = imageDimensions[type] || {};
+    var fullDims = dimensionsForType.full ||
+        { width: 0, height: 0 };
+
+    if (Array.isArray(items)) {
+        // Current API: array of URLs (no protocol).
+        for (var i = 0; i < items.length; i++) {
+            if (items[i]) {
+                images.push({
+                    width: fullDims.width,
+                    height: fullDims.height,
+                    url: ensureProtocol(items[i])
+                });
+            }
+        }
+    } else {
+        // Legacy API: object keyed by size.
+        for (var size in items) {
+            var dimensions = dimensionsForType[size];
+            if (!dimensions) continue;
+            if (items[size]) {
+                images.push({
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    url: items[size]
+                });
+            }
         }
     }
 

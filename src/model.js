@@ -147,6 +147,14 @@ exports.imdb.getMovieInfo = function(id, callback) {
             tomatoes: true
         }
     }, function(err, result) {
-        callback(JSON.parse(result));
+        // OMDB requires an API key now, so without one this returns an
+        // empty body. Guard against malformed/empty responses so the
+        // calling view code doesn't crash on `data.Response`.
+        var data = {};
+        if (!err && result) {
+            try { data = JSON.parse(result.toString()) || {}; }
+            catch (e) { data = {}; }
+        }
+        callback(data);
     });
 };
