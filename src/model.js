@@ -143,6 +143,7 @@ exports.imdb = {};
 exports.imdb.getMovieInfo = function(id, callback) {
     http.request("http://www.omdbapi.com", {
         args: {
+            apikey: 'df2a7ad0',
             i: id,
             tomatoes: true
         }
