@@ -8,9 +8,14 @@ exports.getAuthorizationHeader = function() {
 
 exports.login = function() {
     var response = JSON.parse(http.request(api.API_BASE_URL + "/oauth/device/code", {
-        postdata: {
+        headers: {
+            'Content-Type': 'application/json',
+            'trakt-api-version': '2',
+            'trakt-api-key': api.CLIENT_ID
+        },
+        postdata: JSON.stringify({
             client_id: api.CLIENT_ID
-        }
+        })
     }));
 
     var deviceCode = response.device_code;
@@ -37,12 +42,17 @@ exports.login = function() {
     // Check if user have accepted in a loop
     function checktoken() {
         var response = http.request(api.API_BASE_URL + "/oauth/device/token", {
+            headers: {
+                'Content-Type': 'application/json',
+                'trakt-api-version': '2',
+                'trakt-api-key': api.CLIENT_ID
+            },
             noFail: true,
-            postdata: {
+            postdata: JSON.stringify({
                 code: deviceCode,
                 client_id: api.CLIENT_ID,
                 client_secret: api.CLIENT_SECRET
-            }
+            })
         });
 
         if (response.statuscode === 400) {
@@ -58,6 +68,16 @@ exports.login = function() {
             // denied
             prop.destroy(message);
             popup.notify('Authentication denied by user', 3);
+            return;
+        } else if (response.statuscode === 404) {
+            // invalid device_code
+            prop.destroy(message);
+            popup.notify('Invalid code. Try again.', 3);
+            return;
+        } else if (response.statuscode === 409) {
+            // already used
+            prop.destroy(message);
+            popup.notify('Code already used. Try again.', 3);
             return;
         } else if (response.statuscode === 429) {
             // slow down
@@ -101,13 +121,18 @@ exports.login = function() {
 
 exports.refreshToken = function() {
     var response = http.request(api.API_BASE_URL + "/oauth/token", {
-        postdata: {
+        headers: {
+            'Content-Type': 'application/json',
+            'trakt-api-version': '2',
+            'trakt-api-key': api.CLIENT_ID
+        },
+        postdata: JSON.stringify({
             refresh_token: credentials.refresh_token,
             client_id: api.CLIENT_ID,
             client_secret: api.CLIENT_SECRET,
             redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
             grant_type: 'refresh_token'
-        }
+        })
     });
 
     var token = JSON.parse(response);
