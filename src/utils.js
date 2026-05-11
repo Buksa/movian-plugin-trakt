@@ -106,9 +106,20 @@ exports.firstUrl = function (obj, type) {
 
 function ensureProtocol(url) {
     if (typeof url !== 'string') return url;
-    if (url.indexOf('://') !== -1) return url;
-    if (url.indexOf('//') === 0) return 'https:' + url;
-    return 'https://' + url;
+    if (url.indexOf('://') !== -1) {
+        if (!service.useWebp) url = stripWebp(url);
+        return url;
+    }
+    if (url.indexOf('//') === 0) url = 'https:' + url;
+    else url = 'https://' + url;
+    if (!service.useWebp) url = stripWebp(url);
+    return url;
+}
+
+function stripWebp(url) {
+    if (url.length > 5 && url.substr(url.length - 5) === '.webp')
+        return url.substr(0, url.length - 5);
+    return url;
 }
 
 exports.formatNumber = function (num, numDigits) {
