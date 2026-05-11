@@ -120,27 +120,40 @@ exports.login = function() {
 };
 
 exports.refreshToken = function() {
-    var response = http.request(api.API_BASE_URL + "/oauth/token", {
-        headers: {
-            'Content-Type': 'application/json',
-            'trakt-api-version': '2',
-            'trakt-api-key': api.CLIENT_ID
-        },
-        postdata: JSON.stringify({
-            refresh_token: credentials.refresh_token,
-            client_id: api.CLIENT_ID,
-            client_secret: api.CLIENT_SECRET,
-            redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
-            grant_type: 'refresh_token'
-        })
-    });
+    try {
+        var response = http.request(api.API_BASE_URL + "/oauth/token", {
+            headers: {
+                'Content-Type': 'application/json',
+                'trakt-api-version': '2',
+                'trakt-api-key': api.CLIENT_ID
+            },
+            noFail: true,
+            postdata: JSON.stringify({
+                refresh_token: credentials.refresh_token,
+                client_id: api.CLIENT_ID,
+                client_secret: api.CLIENT_SECRET,
+                redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
+                grant_type: 'refresh_token'
+            })
+        });
 
-    var token = JSON.parse(response);
-    log.d(token);
+        if (response.statuscode && response.statuscode >= 400) {
+            log.e('Token refresh failed (HTTP ' + response.statuscode + '), clearing credentials');
+            delete credentials.apiauth;
+            delete credentials.refresh_token;
+            return;
+        }
 
-    // All looks good
-    credentials.refresh_token = token.refresh_token;
-    credentials.apiauth = token.token_type + ' ' + token.access_token;
+        var token = JSON.parse(response);
+        log.d(token);
 
-    log.d('Successfully renewed token');
+        credentials.refresh_token = token.refresh_token;
+        credentials.apiauth = token.token_type + ' ' + token.access_token;
+
+        log.d('Successfully renewed token');
+    } catch (e) {
+        log.e('Token refresh error: ' + e);
+        delete credentials.apiauth;
+        delete credentials.refresh_token;
+    }
 };
