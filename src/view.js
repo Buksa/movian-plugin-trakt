@@ -8,9 +8,9 @@ function handleEpisodeItem(page, item, config) {
         "E" + utils.formatNumber(item.episode.number, 1);
     var subtitle = new Date(Date.parse(item.first_aired)).toLocaleString();
 
-    var screenshot = utils.img(item.episode, 'screenshot', false);
-    if (!screenshot) screenshot = utils.img(item.show, 'thumb', false);
-    if (!screenshot) screenshot = utils.img(item.show, 'fanart', true);
+    var screenshot = utils.toImageSet(item.episode, 'screenshot', false);
+    if (!screenshot) screenshot = utils.toImageSet(item.show, 'thumb', false);
+    if (!screenshot) screenshot = utils.toImageSet(item.show, 'fanart', true);
 
     var pageItem = page.appendItem(PREFIX + ":show:" + item.show.ids.trakt +
         ":season:" + item.episode.season + ":episode:" + item.episode.number, 'directory', {
@@ -26,9 +26,9 @@ function handleEpisodeItem(page, item, config) {
 function handleMovieItem(page, item, config) {
     var id = item.ids.trakt;
     var title = item.title;
-    var poster = utils.img(item, 'fanart', true);
-    //if (!poster) poster = utils.img(item, 'thumb', false);
-    //if (!poster) poster = utils.img(item, 'poster');
+    var poster = utils.toImageSet(item, 'fanart', true);
+    //if (!poster) poster = utils.toImageSet(item, 'thumb', false);
+    //if (!poster) poster = utils.toImageSet(item, 'poster');
     var pageItem = page.appendItem(PREFIX + ":movie:" + id, 'directory', {
         title: title,
         icon: poster
@@ -41,9 +41,9 @@ function handleMovieItem(page, item, config) {
 function handleShowItem(page, item, config) {
     var id = item.ids.trakt;
     var title = item.title;
-    var poster = utils.img(item, 'thumb', false);
-    if (!poster) poster = utils.img(item, 'fanart', true);
-    //if (!poster) poster = utils.img(item, 'poster');
+    var poster = utils.toImageSet(item, 'thumb', false);
+    if (!poster) poster = utils.toImageSet(item, 'fanart', true);
+    //if (!poster) poster = utils.toImageSet(item, 'poster');
     var pageItem = page.appendItem(PREFIX + ":show:" + id, 'directory', {
         title: title,
         icon: poster
@@ -409,10 +409,10 @@ exports.episode = function (page, show, season, episode, config) {
     model.trakt.getShowInfo(show, function (data, pagination) {
         page.metadata.show.title = data.title;
         if (page.metadata.screenshot.toString() === "null")
-            page.metadata.screenshot = utils.img(data, 'poster');
+            page.metadata.screenshot = utils.toImageSet(data, 'poster');
 
-        page.metadata.background_landscape = utils.img(data, 'fanart');
-        page.metadata.background_portrait = utils.img(data, 'poster');
+        page.metadata.background_landscape = utils.toImageSet(data, 'fanart');
+        page.metadata.background_portrait = utils.toImageSet(data, 'poster');
 
         page.loading--;
     });
@@ -535,8 +535,8 @@ exports.movie = function (page, id, config) {
         page.metadata.imdbid = data.ids.imdb;
         page.metadata.ids.trakt = data.ids.trakt;
         page.metadata.title = data.title;
-        page.metadata.poster = utils.img(data, 'poster');
-        page.metadata.logo = utils.img(data, 'logo', false);
+        page.metadata.poster = utils.toImageSet(data, 'poster');
+        page.metadata.logo = utils.toImageSet(data, 'logo', false);
         page.metadata.year = data.year;
         page.metadata.tagline = data.tagline;
         page.metadata.description = data.overview;
@@ -546,8 +546,8 @@ exports.movie = function (page, id, config) {
         page.metadata.certification = data.certification;
 
 
-        page.metadata.background_landscape = utils.img(data, 'fanart');
-        page.metadata.background_portrait = utils.img(data, 'poster');
+        page.metadata.background_landscape = utils.toImageSet(data, 'fanart');
+        page.metadata.background_portrait = utils.toImageSet(data, 'poster');
 
         if (auth.isAuthenticated()) {
             page.appendAction("Check in", function () {
@@ -807,13 +807,13 @@ exports.open = {
                     page.appendItem(PREFIX + ":movie:" + item.movie.ids.trakt + ":config:" + escape(JSON.stringify(config)),
                         'video', {
                             title: '[MOVIE] ' + item.movie.title /* + " (score: " + item.score + ")"*/,
-                            icon: utils.img(item.movie, 'poster')
+                            icon: utils.toImageSet(item.movie, 'poster')
                         });
                 else if (item.type === 'show')
                     page.appendItem(PREFIX + ":show:" + item.show.ids.trakt + ":config:" + escape(JSON.stringify(config)),
                         'video', {
                             title: '[TV SHOW] ' + item.show.title /* + " (score: " + item.score + ")"*/,
-                            icon: utils.img(item.show, 'poster')
+                            icon: utils.toImageSet(item.show, 'poster')
                         });
                 else if (item.type === 'episode')
                     page.appendItem(PREFIX + ":show:" + item.show.ids.trakt +
@@ -824,7 +824,7 @@ exports.open = {
                             " (Season #" + item.episode.season + ", Episode #" + item.episode.number + ")"
                             /* + " (score: " + item.score + ")"*/
                             ,
-                            icon: utils.img(item.show, 'poster')
+                            icon: utils.toImageSet(item.show, 'poster')
                         });
             }
         });
@@ -854,10 +854,10 @@ exports.season = function (page, show, number, config) {
         page.metadata.certification = data.certification;
         page.metadata.network = data.network;
         page.metadata.runtime = data.runtime + " minutes";
-        page.metadata.poster = utils.img(data, 'poster');
+        page.metadata.poster = utils.toImageSet(data, 'poster');
 
-        page.metadata.background_landscape = utils.img(data, 'fanart', false);
-        page.metadata.background_portrait = utils.img(data, 'poster', true);
+        page.metadata.background_landscape = utils.toImageSet(data, 'fanart', false);
+        page.metadata.background_portrait = utils.toImageSet(data, 'poster', true);
 
         /*page.appendAction('navopen', "search:" + page.metadata.title, false, {
           title: 'Search',
@@ -874,13 +874,13 @@ exports.season = function (page, show, number, config) {
             model.trakt.getSeasonsInfo(show, function (data, pagination) {
                 data = utils.getChild(data, 'number', number);
 
-                var tmpImageset = utils.img(data, 'thumb', false);
+                var tmpImageset = utils.toImageSet(data, 'thumb', false);
                 if (tmpImageset) {
                     page.metadata.background_landscape = tmpImageset;
                 }
 
-                if (utils.images(data).poster)
-                    page.metadata.poster = utils.img(data, 'poster');
+                if (data && data.images && data.images.poster)
+                    page.metadata.poster = utils.toImageSet(data, 'poster');
                 page.metadata.trakt.rating = Math.round(data.rating * 10) + "%";
                 if (data.first_aired)
                     page.metadata.firstAired = new Date(data.first_aired).toLocaleString();
@@ -901,7 +901,7 @@ exports.season = function (page, show, number, config) {
                         episode: item.number,
                         title: "Episode #" + item.number,
                         subtitle: item.title,
-                        screenshot: utils.img(item, 'screenshot', false) || utils.img(showItem, 'fanart', true),
+                        screenshot: utils.toImageSet(item, 'screenshot', false) || utils.toImageSet(showItem, 'fanart', true),
                         url: PREFIX + ":show:" + show + ":season:" + number + ":episode:" + item.number
                     });
 
@@ -1007,7 +1007,7 @@ exports.scrobble = {
                 if (item.type === 'movie') {
                     page.appendItem(PREFIX + ":scrobble:play:movie:" + escape(config.play.url) + ":" + item.movie.ids.trakt, 'video', {
                         title: '[MOVIE] ' + item.movie.title /* + " (score: " + item.score + ")"*/,
-                        icon: utils.img(item.movie, 'poster')
+                        icon: utils.toImageSet(item.movie, 'poster')
                     });
                 } else if (item.type === 'episode')
                     page.appendItem(PREFIX + ":scrobble:play:episode:" + escape(config.play.url) + ":" +
@@ -1017,7 +1017,7 @@ exports.scrobble = {
                             " (Season #" + item.episode.season + ", Episode #" + item.episode.number + ")"
                             /* + " (score: " + item.score + ")"*/
                             ,
-                            icon: utils.img(item.show, 'poster')
+                            icon: utils.toImageSet(item.show, 'poster')
                         });
             }
         });
@@ -1072,9 +1072,9 @@ exports.show = function (page, id, config) {
         page.metadata.imdbid = data.ids.imdb;
 
         page.metadata.title = data.title;
-        page.metadata.logo = utils.img(data, 'logo', false);
+        page.metadata.logo = utils.toImageSet(data, 'logo', false);
         page.metadata.icon = page.metadata.logo;
-        page.metadata.poster = utils.img(data, 'poster');
+        page.metadata.poster = utils.toImageSet(data, 'poster');
         page.metadata.year = data.year;
         page.metadata.tagline = data.tagline;
         page.metadata.description = data.overview;
@@ -1085,8 +1085,8 @@ exports.show = function (page, id, config) {
         page.metadata.airedEpisodes = data.aired_episodes;
         page.metadata.status = utils.prettyStatus(data.status);
 
-        page.metadata.background_landscape = utils.img(data, 'fanart', true);
-        page.metadata.background_portrait = utils.img(data, 'poster', true);
+        page.metadata.background_landscape = utils.toImageSet(data, 'fanart', true);
+        page.metadata.background_portrait = utils.toImageSet(data, 'poster', true);
 
         if (data.trailer) {
             if (data.trailer)
@@ -1115,7 +1115,7 @@ exports.show = function (page, id, config) {
                 page.metadata.nextEpisode = {
                     title: 'Next to Watch: Season #' + nextEpisode.season + ', Episode #' + nextEpisode.number,
                     subtitle: nextEpisode.title,
-                    screenshot: utils.img(nextEpisode, 'screenshot'),
+                    screenshot: utils.toImageSet(nextEpisode, 'screenshot'),
                     url: PREFIX + ":show:" + id + ":season:" + nextEpisode.season + ":episode:" + nextEpisode.number
                 };
             }
@@ -1238,9 +1238,9 @@ exports.show = function (page, id, config) {
                 for (var i in data) {
                     var item = data[i];
 
-                    var image = utils.img(item, 'thumb', false);
-                    if (!image) image = utils.img(item, 'fanart', false);
-                    if (!image) image = utils.img(item, 'poster', false);
+                    var image = utils.toImageSet(item, 'thumb', false);
+                    if (!image) image = utils.toImageSet(item, 'fanart', false);
+                    if (!image) image = utils.toImageSet(item, 'poster', false);
                     if (!image) image = page.metadata.poster;
 
                     var metadata = {
