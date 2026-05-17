@@ -76,12 +76,6 @@ if (Core.currentVersionInt >= 50000241) {
     });
 }
 
-settings.createDivider("Images");
-
-settings.createBool("useWebp", "Use WebP images (disable if posters are blank)", false, function(v) {
-    service.useWebp = v;
-});
-
 settings.createDivider("Debug");
 
 settings.createBool("debug", "Write to stdout debug information", false, function(v) {
