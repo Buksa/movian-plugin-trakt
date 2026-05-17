@@ -8,9 +8,14 @@ exports.getAuthorizationHeader = function() {
 
 exports.login = function() {
     var response = JSON.parse(http.request(api.API_BASE_URL + "/oauth/device/code", {
-        postdata: {
+        headers: {
+            'Content-Type': 'application/json',
+            'trakt-api-version': '2',
+            'trakt-api-key': api.CLIENT_ID
+        },
+        postdata: JSON.stringify({
             client_id: api.CLIENT_ID
-        }
+        })
     }));
 
     var deviceCode = response.device_code;
@@ -32,23 +37,22 @@ exports.login = function() {
     prop.setParent(message, prop.global.popups);
 
     var timer = null;
-    var interval = 3000;
+    var interval = response.interval ? response.interval * 1000 : 5000;
 
     // Check if user have accepted in a loop
     function checktoken() {
-        // In order to protect the plugins client-secret a Oauth proxy
-        // runs at https://movian.tv which will append the oauth secret
-        // and forward the request to Trakt's servers
-        var response = http.request("https://movian.tv/oauthproxy/token", {
+        var response = http.request(api.API_BASE_URL + "/oauth/device/token", {
             headers: {
-                referer: 'https://movian.tv/',
-                'X-URL-ID': 'oauth/device/token'
+                'Content-Type': 'application/json',
+                'trakt-api-version': '2',
+                'trakt-api-key': api.CLIENT_ID
             },
             noFail: true,
-            postdata: {
+            postdata: JSON.stringify({
+                code: deviceCode,
                 client_id: api.CLIENT_ID,
-                code: deviceCode
-            }
+                client_secret: api.CLIENT_SECRET
+            })
         });
 
         if (response.statuscode === 400) {
@@ -57,11 +61,23 @@ exports.login = function() {
             return;
         } else if (response.statuscode === 410) {
             // expired
+            prop.destroy(message);
             popup.notify('Code expired. Try again.', 3);
             return;
         } else if (response.statuscode === 418) {
             // denied
+            prop.destroy(message);
             popup.notify('Authentication denied by user', 3);
+            return;
+        } else if (response.statuscode === 404) {
+            // invalid device_code
+            prop.destroy(message);
+            popup.notify('Invalid code. Try again.', 3);
+            return;
+        } else if (response.statuscode === 409) {
+            // already used
+            prop.destroy(message);
+            popup.notify('Code already used. Try again.', 3);
             return;
         } else if (response.statuscode === 429) {
             // slow down
@@ -86,7 +102,7 @@ exports.login = function() {
     }
 
     // Start the refresh loop
-    timer = setTimeout(checktoken, 10000);
+    timer = setTimeout(checktoken, interval);
 
     // Subscribe to the popup eventSink to detect if user presses cancel
     prop.subscribe(message.eventSink, function(event, data) {
@@ -104,25 +120,40 @@ exports.login = function() {
 };
 
 exports.refreshToken = function() {
-    var response = http.request("https://movian.tv/oauthproxy/token", {
-        headers: {
-            referer: 'https://movian.tv/',
-            'X-URL-ID': 'oauth/token'
-        },
-        postdata: {
-            refresh_token: credentials.refresh_token,
-            client_id: api.CLIENT_ID,
-            redirect_uri: 'https://movian.tv/trakt/callback',
-            grant_type: 'refresh_token'
+    try {
+        var response = http.request(api.API_BASE_URL + "/oauth/token", {
+            headers: {
+                'Content-Type': 'application/json',
+                'trakt-api-version': '2',
+                'trakt-api-key': api.CLIENT_ID
+            },
+            noFail: true,
+            postdata: JSON.stringify({
+                refresh_token: credentials.refresh_token,
+                client_id: api.CLIENT_ID,
+                client_secret: api.CLIENT_SECRET,
+                redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
+                grant_type: 'refresh_token'
+            })
+        });
+
+        if (response.statuscode && response.statuscode >= 400) {
+            log.e('Token refresh failed (HTTP ' + response.statuscode + '), clearing credentials');
+            delete credentials.apiauth;
+            delete credentials.refresh_token;
+            return;
         }
-    });
 
-    var token = JSON.parse(response);
-    log.d(token);
+        var token = JSON.parse(response);
+        log.d(token);
 
-    // All looks good
-    credentials.refresh_token = token.refresh_token;
-    credentials.apiauth = token.token_type + ' ' + token.access_token;
+        credentials.refresh_token = token.refresh_token;
+        credentials.apiauth = token.token_type + ' ' + token.access_token;
 
-    log.d('Successfully renewed token');
+        log.d('Successfully renewed token');
+    } catch (e) {
+        log.e('Token refresh error: ' + e);
+        delete credentials.apiauth;
+        delete credentials.refresh_token;
+    }
 };

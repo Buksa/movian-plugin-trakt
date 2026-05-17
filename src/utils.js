@@ -82,16 +82,12 @@ var imageDimensions = {
 // Older versions returned an object keyed by size, and at one point images
 // were dropped entirely. These helpers tolerate all three shapes so the
 // plugin never crashes while reading image fields.
-exports.images = function (obj) {
+function safeImages(obj) {
     return (obj && obj.images) || {};
-};
-
-exports.img = function (obj, type, useDefault) {
-    return exports.toImageSet(exports.images(obj)[type], type, useDefault);
-};
+}
 
 exports.firstUrl = function (obj, type) {
-    var v = exports.images(obj)[type];
+    var v = safeImages(obj)[type];
     if (Array.isArray(v)) {
         for (var i = 0; i < v.length; i++) {
             if (v[i]) return ensureProtocol(v[i]);
@@ -143,8 +139,9 @@ exports.prettyStatus = function (status) {
     return status.capitalize(status);
 };
 
-exports.toImageSet = function (items, type, useDefault) {
+exports.toImageSet = function (obj, type, useDefault) {
     if (useDefault === null || useDefault === undefined) useDefault = true;
+    var items = safeImages(obj)[type];
     if (!items) items = {};
 
     var images = [];

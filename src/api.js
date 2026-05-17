@@ -4,6 +4,7 @@ exports.API_BASE_URL = "https://api.trakt.tv";
 
 // please use your own API KEY
 exports.CLIENT_ID = "c752231dbc78daf7c76d0b3fb2b7a18403e0a2c9b968bcbee5f79a0268ac5ea0";
+exports.CLIENT_SECRET = "437e14f28915d4afd752c0a9b3b9f8d690c1c8bdc91893f79c7ee50bb8bff48b";
 
 var Api = function() {
     return {
