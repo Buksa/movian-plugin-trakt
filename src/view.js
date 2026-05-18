@@ -222,29 +222,29 @@ exports.landingPage = function (page) {
         templateList(page, model.trakt.calendars.myShows.bind(null, startDate, 31), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":calendars:myshows",
-            numberItems: 4,
+            numberItems: 10,
             beforeItem: separatorMoviesInWatchlist
         });
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'movies'), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":my:watchlist:movies",
-            numberItems: 4,
+            numberItems: 10,
             beforeItem: separatorTvShowsInWatchlist
         });
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'shows'), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":my:watchlist:shows",
-            numberItems: 4,
+            numberItems: 10,
             beforeItem: separatorMoviesTrending
         });
     }
 
-    templateList(page, model.trakt.movies.trending.bind(null, 1, 4), {
+    templateList(page, model.trakt.movies.trending.bind(null, 1, 10), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:trending",
-        numberItems: 4,
+        numberItems: 10,
         beforeItem: separatorMoviesMostAnticipated
     });
 
@@ -263,17 +263,17 @@ exports.landingPage = function (page) {
         beforeItem: separatorMoviesMostAnticipated
     });*/
 
-    templateList(page, model.trakt.movies.anticipated.bind(null, 1, 4), {
+    templateList(page, model.trakt.movies.anticipated.bind(null, 1, 10), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:anticipated",
-        numberItems: 4,
+        numberItems: 10,
         beforeItem: separatorShowsTrending
     });
 
-    templateList(page, model.trakt.shows.trending.bind(null, 1, 4), {
+    templateList(page, model.trakt.shows.trending.bind(null, 1, 10), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:trending",
-        numberItems: 4,
+        numberItems: 10,
         beforeItem: separatorShowsMostAnticipated
     });
 
@@ -292,10 +292,10 @@ exports.landingPage = function (page) {
         beforeItem: separatorShowsMostAnticipated
     });*/
 
-    templateList(page, model.trakt.shows.anticipated.bind(null, 1, 4), {
+    templateList(page, model.trakt.shows.anticipated.bind(null, 1, 10), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:anticipated",
-        numberItems: 4,
+        numberItems: 10,
         beforeItem: separatorOtherLists
     });
 
