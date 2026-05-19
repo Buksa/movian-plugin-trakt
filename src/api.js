@@ -84,11 +84,11 @@ var Api = function() {
                                 try {
                                     var pagination = null;
 
-                                    if (result.headers['X-Pagination-Item-Count']) {
+                                    if (result.headers['x-pagination-item-count']) {
                                         pagination = {
-                                            currentPage: parseInt(result.headers['X-Pagination-Page']),
-                                            itemCount: parseInt(result.headers['X-Pagination-Item-Count']),
-                                            pageCount: parseInt(result.headers['X-Pagination-Page-Count'])
+                                            currentPage: parseInt(result.headers['x-pagination-page']),
+                                            itemCount: parseInt(result.headers['x-pagination-item-count']),
+                                            pageCount: parseInt(result.headers['x-pagination-page-count'])
                                         };
 
                                         if (pagination.currentPage < pagination.pageCount) {
