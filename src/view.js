@@ -241,7 +241,7 @@ exports.landingPage = function (page) {
         });
     }
 
-    templateList(page, model.trakt.movies.trending.bind(null, 1, 10), {
+    templateList(page, model.trakt.movies.trending.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:trending",
         numberItems: 10,
@@ -263,14 +263,14 @@ exports.landingPage = function (page) {
         beforeItem: separatorMoviesMostAnticipated
     });*/
 
-    templateList(page, model.trakt.movies.anticipated.bind(null, 1, 10), {
+    templateList(page, model.trakt.movies.anticipated.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:anticipated",
         numberItems: 10,
         beforeItem: separatorShowsTrending
     });
 
-    templateList(page, model.trakt.shows.trending.bind(null, 1, 10), {
+    templateList(page, model.trakt.shows.trending.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:trending",
         numberItems: 10,
@@ -292,7 +292,7 @@ exports.landingPage = function (page) {
         beforeItem: separatorShowsMostAnticipated
     });*/
 
-    templateList(page, model.trakt.shows.anticipated.bind(null, 1, 10), {
+    templateList(page, model.trakt.shows.anticipated.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:anticipated",
         numberItems: 10,
