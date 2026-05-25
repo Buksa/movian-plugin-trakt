@@ -384,7 +384,7 @@ exports.episode = function (page, show, season, episode, config) {
                 };
                 model.trakt.checkin(postdata, function (response, pagination, error) {
                     if (response) popup.notify("Successfully checked in", 3);
-                    else if (error.statuscode === 409) popup.notify("Already checked in", 3);
+                    else if (error && error.statuscode === 409) popup.notify("Already checked in", 3);
                     else popup.notify("Failed to check in", 3);
                 });
             });
@@ -556,7 +556,7 @@ exports.movie = function (page, id, config) {
                 };
                 model.trakt.checkin(postdata, function (response, pagination, error) {
                     if (response) popup.notify("Successfully checked in", 3);
-                    else if (error.statuscode === 409) popup.notify("Already checked in", 3);
+                    else if (error && error.statuscode === 409) popup.notify("Already checked in", 3);
                     else popup.notify("Failed to check in", 3);
                 });
             }).moveBefore(itemSimilar);
