@@ -214,7 +214,7 @@ exports.movies.anticipated = function(pageNum, numberItemsPerPage, callback) {
 };
 
 exports.movies.played = function(pageNum, numberItemsPerPage, callback) {
-    Api.call("/movies/played", {
+    Api.call("/movies/played/weekly", {
         method: 'GET',
         args: {
             page: pageNum,
@@ -371,7 +371,7 @@ exports.shows.anticipated = function(pageNum, numberItemsPerPage, callback) {
 };
 
 exports.shows.played = function(pageNum, numberItemsPerPage, callback) {
-    Api.call("/shows/played", {
+    Api.call("/shows/played/weekly", {
         method: 'GET',
         args: {
             page: pageNum,
