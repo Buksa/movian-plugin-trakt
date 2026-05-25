@@ -139,6 +139,99 @@ function templateList(page, model, config) {
     loader();
 }
 
+/**
+ * Sets up watchlist check + add/remove toggle for a movie or show detail page.
+ * @param {object} opts
+ * @param {object} opts.page - the page object
+ * @param {string} opts.type - 'movies' or 'shows'
+ * @param {string} opts.typeName - 'movie' or 'TV show' (for notifications)
+ * @param {string} opts.itemKey - 'movie' or 'show' (key in watchlist items)
+ * @param {function} opts.getItem - returns the item object or null
+ * @param {function} opts.buildPostdata - builds postdata from item
+ * @param {object} opts.itemManipulateWatchlist - initial action item ref (mutated)
+ */
+function setupWatchlistToggle(opts) {
+    var page = opts.page;
+    var type = opts.type;
+    var typeName = opts.typeName;
+    var itemKey = opts.itemKey;
+
+    prop.subscribe(page.metadata.ids.trakt, function (event, data) {
+        if (event === "set" && data !== null) {
+            model.trakt.sync.getWatchlist(type, function (data, pagination, error) {
+                if (data) {
+                    var inWatchlist = false;
+                    for (var i in data) {
+                        var item = data[i];
+                        if (item[itemKey].ids.trakt === parseInt(page.metadata.ids.trakt.toString())) {
+                            inWatchlist = true;
+                            log.d(typeName + " is in watchlist!");
+                        }
+                    }
+
+                    if (!inWatchlist) {
+                        log.d(typeName + " is not in watchlist!");
+                    }
+
+                    page.metadata.inWatchlist = inWatchlist;
+                }
+            });
+        }
+    });
+
+    var itemManipulateWatchlist = opts.itemManipulateWatchlist;
+
+    prop.subscribe(page.metadata.inWatchlist, function (event, data) {
+        if (event === "set" && data !== null) {
+            if (data) {
+                var newItemManipulateWatchlist = page.appendAction('Remove from Watchlist', function (v) {
+                    log.d('Removing from watchlist');
+                    var currentItem = opts.getItem();
+                    if (currentItem) {
+                        var postdata = opts.buildPostdata(currentItem);
+                        model.trakt.sync.removeFromWatchlist(postdata, function (data, pagination, error) {
+                            if (data) {
+                                if (data.deleted[type] > 0) {
+                                    page.metadata.inWatchlist = false;
+                                    popup.notify("Removed successfully " + typeName + " from watchlist", 4);
+                                } else if (data.not_found[type] > 0) popup.notify("Trakt couldn't find the " + typeName + "...", 4);
+                            } else
+                                popup.notify("Failed to remove from watchlist", 3);
+                        });
+                    } else popup.notify("Operation not yet available", 3);
+                });
+
+                newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
+                itemManipulateWatchlist.destroy();
+                itemManipulateWatchlist = newItemManipulateWatchlist;
+
+            } else {
+                var newItemManipulateWatchlist = page.appendAction('Add to Watchlist', function (v) {
+                    log.d('Adding to watchlist');
+                    var currentItem = opts.getItem();
+                    if (currentItem) {
+                        var postdata = opts.buildPostdata(currentItem);
+                        model.trakt.sync.addToWatchlist(postdata, function (data, pagination, error) {
+                            if (data) {
+                                if (data.added[type] > 0) {
+                                    page.metadata.inWatchlist = true;
+                                    popup.notify("Added successfully " + typeName + " to watchlist", 4);
+                                } else if (data.existing[type] > 0) popup.notify(typeName + " was already in watchlist", 4);
+                                else if (data.not_found[type] > 0) popup.notify("Trakt couldn't find the " + typeName + "...", 4);
+                            } else
+                                popup.notify("Failed to add to watchlist", 3);
+                        });
+                    } else popup.notify("Operation not yet available", 3);
+                });
+
+                newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
+                itemManipulateWatchlist.destroy();
+                itemManipulateWatchlist = newItemManipulateWatchlist;
+            }
+        }
+    });
+}
+
 /*******************************************************************************
  * Exported Functions
  ******************************************************************************/
@@ -703,91 +796,16 @@ exports.movie = function (page, id, config) {
             page.loading--;
         });
 
-        prop.subscribe(page.metadata.ids.trakt, function (event, data) {
-            if (event === "set" && data !== null) {
-                model.trakt.sync.getWatchlist('movies', function (data, pagination, error) {
-                    if (data) {
-                        var inWatchlist = false;
-                        for (var i in data) {
-                            var item = data[i];
-                            if (item.movie.ids.trakt === parseInt(page.metadata.ids.trakt.toString())) {
-                                inWatchlist = true;
-                                log.d("Movie is in watchlist!");
-                            }
-                        }
-
-                        if (!inWatchlist) {
-                            log.d("Movie is not in watchlist!");
-                        }
-
-                        page.metadata.inWatchlist = inWatchlist;
-                    }
-                });
-            }
-        });
-
-        prop.subscribe(page.metadata.inWatchlist, function (event, data) {
-            if (event === "set" && data !== null) {
-                if (data) {
-                    // in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Remove from Watchlist', function (v) {
-                        log.d('Removing from watchlist');
-                        if (movie) {
-                            var postdata = {
-                                movies: [{
-                                    ids: {
-                                        trakt: movie.ids.trakt,
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.removeFromWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.deleted.movies > 0) {
-                                        page.metadata.inWatchlist = false;
-                                        popup.notify("Removed successfully movie from watchlist", 4);
-                                    } else if (data.not_found.movies > 0) popup.notify("Trakt couldn't find the movie...", 4);
-                                } else
-                                    popup.notify("Failed to remove from watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-
-                } else {
-                    // not in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Add to Watchlist', function (v) {
-                        log.d('Adding to watchlist');
-                        if (movie) {
-                            var postdata = {
-                                movies: [{
-                                    ids: {
-                                        trakt: movie.ids.trakt,
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.addToWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.added.movies > 0) {
-                                        page.metadata.inWatchlist = true;
-                                        popup.notify("Added successfully movie to watchlist", 4);
-                                    } else if (data.existing.movies > 0) popup.notify("Movie was already in watchlist", 4);
-                                    else if (data.not_found.movies > 0) popup.notify("Trakt couldn't find the movie...", 4);
-                                } else
-                                    popup.notify("Failed to add to watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-                }
-            }
+        setupWatchlistToggle({
+            page: page,
+            type: 'movies',
+            typeName: 'movie',
+            itemKey: 'movie',
+            getItem: function() { return movie; },
+            buildPostdata: function(m) {
+                return { movies: [{ ids: { trakt: m.ids.trakt } }] };
+            },
+            itemManipulateWatchlist: itemManipulateWatchlist
         });
     }
 
@@ -1252,105 +1270,29 @@ exports.show = function (page, id, config) {
     }
 
     if (auth.isAuthenticated()) {
-        prop.subscribe(page.metadata.ids.trakt, function (event, data) {
-            if (event === "set" && data !== null) {
-                model.trakt.sync.getWatchlist('shows', function (data, pagination, error) {
-                    if (data) {
-                        var inWatchlist = false;
-                        for (var i in data) {
-                            var item = data[i];
-                            if (item.show.ids.trakt === parseInt(page.metadata.ids.trakt.toString())) {
-                                inWatchlist = true;
-                                log.d("TV show is in watchlist!");
-                            }
+        setupWatchlistToggle({
+            page: page,
+            type: 'shows',
+            typeName: 'TV show',
+            itemKey: 'show',
+            getItem: function() { return show; },
+            buildPostdata: function(s) {
+                return {
+                    shows: [{
+                        title: s.title,
+                        year: s.year,
+                        ids: {
+                            trakt: s.ids.trakt,
+                            slug: s.ids.slug,
+                            tvdb: s.ids.tvdb,
+                            imdb: s.ids.imdb,
+                            tmdb: s.ids.tmdb,
+                            tvrage: s.ids.tvrage
                         }
-
-                        if (!inWatchlist) {
-                            log.d("TV show is not in watchlist!");
-                        }
-
-                        page.metadata.inWatchlist = inWatchlist;
-                    }
-                });
-            }
-        });
-
-        prop.subscribe(page.metadata.inWatchlist, function (event, data) {
-            if (event === "set" && data !== null) {
-                if (data) {
-                    // in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Remove from Watchlist', function (v) {
-                        log.d('Removing from watchlist');
-                        if (show) {
-                            var postdata = {
-                                shows: [{
-                                    title: show.title,
-                                    year: show.year,
-                                    ids: {
-                                        trakt: show.ids.trakt,
-                                        slug: show.ids.slug,
-                                        tvdb: show.ids.tvdb,
-                                        imdb: show.ids.imdb,
-                                        tmdb: show.ids.tmdb,
-                                        tvrage: show.ids.tvrage
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.removeFromWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.deleted.shows > 0) {
-                                        page.metadata.inWatchlist = false;
-                                        popup.notify("Removed successfully TV show from watchlist", 4);
-                                    } else if (data.not_found.shows > 0) popup.notify("Trakt couldn't find the TV show...", 4);
-                                } else
-                                    popup.notify("Failed to remove from watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-
-                } else {
-                    // not in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Add to Watchlist', function (v) {
-                        log.d('Adding to watchlist');
-                        if (show) {
-                            var postdata = {
-                                shows: [{
-                                    title: show.title,
-                                    year: show.year,
-                                    ids: {
-                                        trakt: show.ids.trakt,
-                                        slug: show.ids.slug,
-                                        tvdb: show.ids.tvdb,
-                                        imdb: show.ids.imdb,
-                                        tmdb: show.ids.tmdb,
-                                        tvrage: show.ids.tvrage
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.addToWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.added.shows > 0) {
-                                        page.metadata.inWatchlist = true;
-                                        popup.notify("Added successfully TV show to watchlist", 4);
-                                    } else if (data.existing.shows > 0) popup.notify("TV show was already in watchlist", 4);
-                                    else if (data.not_found.shows > 0) popup.notify("Trakt couldn't find the TV show...", 4);
-                                } else
-                                    popup.notify("Failed to add to watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-                }
-            }
+                    }]
+                };
+            },
+            itemManipulateWatchlist: itemManipulateWatchlist
         });
     }
 
