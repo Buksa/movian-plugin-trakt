@@ -181,6 +181,14 @@ exports.landingPage = function (page) {
         var separatorTvShowsInWatchlist = page.appendPassiveItem('separator', null, {
             title: 'TV Shows in my Watchlist'
         });
+
+        var separatorRecentlyWatchedMovies = page.appendPassiveItem('separator', null, {
+            title: 'Recently Watched Movies'
+        });
+
+        var separatorRecentlyWatchedShows = page.appendPassiveItem('separator', null, {
+            title: 'Recently Watched Shows'
+        });
     }
     var separatorMoviesTrending = page.appendPassiveItem('separator', null, {
         title: 'Movies - Trending'
@@ -249,6 +257,21 @@ exports.landingPage = function (page) {
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'shows'), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":my:watchlist:shows",
+            numberItems: 9,
+            beforeItem: separatorRecentlyWatchedMovies
+        });
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
+            noPaginator: true,
+            moreItemsUri: PREFIX + ":history:movies",
+            numberItems: 9,
+            itemType: 'movie',
+            beforeItem: separatorRecentlyWatchedShows
+        });
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {
+            noPaginator: true,
+            moreItemsUri: PREFIX + ":history:shows",
             numberItems: 9,
             beforeItem: separatorMoviesTrending
         });
@@ -495,6 +518,30 @@ exports.episode = function (page, show, season, episode, config) {
 };
 
 exports.movies = {};
+
+exports.history = {
+    movies: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Recently Watched Movies";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
+            itemType: 'movie'
+        });
+    },
+
+    shows: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Recently Watched Shows";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {});
+    }
+};
 
 exports.recommendations = {
     movies: function (page) {

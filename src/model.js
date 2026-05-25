@@ -134,6 +134,10 @@ exports.trakt.sync = {
         api.sync.getHistory(type, id, callback);
     },
 
+    getWatched: function(type, pageNum, numberItemsPerPage, callback) {
+        api.sync.getWatched(type, pageNum, numberItemsPerPage, callback);
+    },
+
     getWatchlist: function(type, callback) {
         api.sync.getWatchlist(type, callback);
     },

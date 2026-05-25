@@ -478,6 +478,17 @@ exports.sync = {
         }, callback);
     },
 
+    getWatched: function(type, pageNum, numberItemsPerPage, callback) {
+        Api.call("/sync/history/" + type, {
+            method: 'GET',
+            args: {
+                page: pageNum,
+                limit: numberItemsPerPage,
+                extended: 'images'
+            }
+        }, callback);
+    },
+
     getWatchlist: function(type, callback) {
         Api.call("/sync/watchlist/" + type, {
             method: 'GET',

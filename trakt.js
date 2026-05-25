@@ -90,6 +90,14 @@ new page.Route(PREFIX + ":start", function(page) {
     view.landingPage(page);
 });
 
+new page.Route(PREFIX + ":history:movies", function(page) {
+    view.history.movies(page);
+});
+
+new page.Route(PREFIX + ":history:shows", function(page) {
+    view.history.shows(page);
+});
+
 new page.Route(PREFIX + ":calendars:mymovies", function(page) {
     view.calendars.mymovies(page);
 });
