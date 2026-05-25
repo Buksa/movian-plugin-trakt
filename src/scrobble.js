@@ -53,7 +53,7 @@ exports.init = function() {
                 if (data) {
                     log.d("Stopped scrobbling to Trakt");
                 } else {
-                    if (error.statuscode === 409)
+                    if (error && error.statuscode === 409)
                         log.d("Media was already scrobbled");
                     else log.d("Failed to stop scrobbling");
                 }

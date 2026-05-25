@@ -218,7 +218,7 @@ exports.landingPage = function (page) {
 
     if (auth.isAuthenticated()) {
         var startDate = new Date();
-        startDate = startDate.getFullYear() + "-" + (startDate.getMonth() + 1) + "-" + startDate.getDate();
+        startDate = startDate.getFullYear() + "-" + utils.formatNumber(startDate.getMonth() + 1, 2) + "-" + utils.formatNumber(startDate.getDate(), 2);
         templateList(page, model.trakt.calendars.myShows.bind(null, startDate, 31), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":calendars:myshows",
@@ -333,7 +333,7 @@ exports.calendars = {
         page.loading = true;
 
         var startDate = new Date();
-        startDate = startDate.getFullYear() + "-" + (startDate.getMonth() + 1) + "-" + startDate.getDate();
+        startDate = startDate.getFullYear() + "-" + utils.formatNumber(startDate.getMonth() + 1, 2) + "-" + utils.formatNumber(startDate.getDate(), 2);
         templateList(page, model.trakt.calendars.myShows.bind(null, startDate, 31), {});
     }
 };
@@ -575,8 +575,7 @@ exports.movie = function (page, id, config) {
         }
 
         if (data.trailer) {
-            if (data.trailer)
-                data.trailer = data.trailer.replace("youtube.com", "www.youtube.com");
+            data.trailer = data.trailer.replace("youtube.com", "www.youtube.com");
             var itemTrailer = page.appendItem(data.trailer, 'video', {
                 title: 'Trailer',
                 icon: Plugin.path + "views/img/play.png"
@@ -1089,8 +1088,7 @@ exports.show = function (page, id, config) {
         page.metadata.background_portrait = utils.toImageSet(data, 'poster', true);
 
         if (data.trailer) {
-            if (data.trailer)
-                data.trailer = data.trailer.replace("youtube.com", "www.youtube.com");
+            data.trailer = data.trailer.replace("youtube.com", "www.youtube.com");
             var itemTrailer = page.appendItem(data.trailer, 'video', {
                 title: 'Trailer',
                 icon: Plugin.path + "views/img/play.png"
@@ -1273,22 +1271,23 @@ exports.show = function (page, id, config) {
                     page.metadata.released = data.Released;
                     page.metadata.awards = data.Awards;
 
-                    page.metadata.numberAwardsWins = 0;
-                    if (data.Awards) {
-                        // check for golden globes
-                        var match = data.Awards.match(/Won (\d+) Golden Globes?/);
-                        if (match) {
-                            page.metadata.numberAwardsWins += parseInt(match[1]);
-                        }
+                                page.metadata.numberAwardsWins = 0;
+                                page.metadata.numberAwardsNominations = 0;
+                                if (data.Awards) {
+                                    // check for golden globes
+                                    var match = data.Awards.match(/Won (\d+) Golden Globes?/);
+                                    if (match) {
+                                        page.metadata.numberAwardsWins += parseInt(match[1]);
+                                    }
 
-                        match = data.Awards.match(/(\d+) wins?/);
-                        if (match) {
-                            page.metadata.numberAwardsWins += parseInt(match[1]);
-                        }
+                                    match = data.Awards.match(/(\d+) wins?/);
+                                    if (match) {
+                                        page.metadata.numberAwardsWins += parseInt(match[1]);
+                                    }
 
-                        match = data.Awards.match(/(\d+) nominations?/);
-                        if (match) {
-                            page.metadata.numberAwardsNominations += parseInt(match[1]);
+                                    match = data.Awards.match(/(\d+) nominations?/);
+                                    if (match) {
+                                        page.metadata.numberAwardsNominations += parseInt(match[1]);
                         }
                     }
 
