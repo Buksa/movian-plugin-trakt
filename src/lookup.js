@@ -161,10 +161,10 @@ exports.getItems = function(page, data, callback) {
 
     prop.subscribe(page.metadata.processedStages, function(event, processedStages) {
         if (event === 'set' && processedStages === totalStages) {
-            for (var i in items) {
-                if (data.excludeTypes && data.excludeTypes.indexOf(items[i].type) != -1) {
-                    items.splice(i, 1);
-                }
+            if (data.excludeTypes) {
+                items = items.filter(function(item) {
+                    return data.excludeTypes.indexOf(item.type) === -1;
+                });
             }
 
             utils.sortByField(items, 'score', false);
