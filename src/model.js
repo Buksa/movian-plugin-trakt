@@ -6,6 +6,10 @@ var api = require('./api');
 exports.trakt = {};
 
 exports.trakt.calendars = {
+    myMovies: function(startDate, numberDays, callback) {
+        api.calendars.myMovies(startDate, numberDays, callback);
+    },
+
     myShows: function(startDate, numberDays, callback) {
         api.calendars.myShows(startDate, numberDays, callback);
     }
@@ -117,6 +121,16 @@ exports.trakt.scrobble.stop = function(item, progress, callback) {
     api.scrobble.stop(item, progress, callback);
 };
 
+exports.trakt.users = {
+    lists: function(callback) {
+        api.users.lists(callback);
+    },
+
+    listItems: function(listId, pageNum, numberItemsPerPage, callback) {
+        api.users.listItems(listId, pageNum, numberItemsPerPage, callback);
+    }
+};
+
 exports.trakt.sync = {
     addToHistory: function(postdata, callback) {
         api.sync.addToHistory(postdata, callback);
@@ -128,6 +142,10 @@ exports.trakt.sync = {
 
     getHistory: function(type, id, callback) {
         api.sync.getHistory(type, id, callback);
+    },
+
+    getWatched: function(type, pageNum, numberItemsPerPage, callback) {
+        api.sync.getWatched(type, pageNum, numberItemsPerPage, callback);
     },
 
     getWatchlist: function(type, callback) {

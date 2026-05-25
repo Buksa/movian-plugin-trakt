@@ -90,6 +90,18 @@ new page.Route(PREFIX + ":start", function(page) {
     view.landingPage(page);
 });
 
+new page.Route(PREFIX + ":history:movies", function(page) {
+    view.history.movies(page);
+});
+
+new page.Route(PREFIX + ":history:shows", function(page) {
+    view.history.shows(page);
+});
+
+new page.Route(PREFIX + ":calendars:mymovies", function(page) {
+    view.calendars.mymovies(page);
+});
+
 new page.Route(PREFIX + ":calendars:myshows", function(page) {
     view.calendars.myshows(page);
 });
@@ -106,6 +118,14 @@ new page.Route(PREFIX + ":movie:(.*):similar", function(page, id) {
     view.movie.similar(page, id);
 });
 
+new page.Route(PREFIX + ":recommendations:movies", function(page) {
+    view.recommendations.movies(page);
+});
+
+new page.Route(PREFIX + ":recommendations:shows", function(page) {
+    view.recommendations.shows(page);
+});
+
 new page.Route(PREFIX + ":movies:anticipated", function(page) {
     view.movies.anticipated(page);
 });
@@ -120,6 +140,14 @@ new page.Route(PREFIX + ":movies:popular", function(page) {
 
 new page.Route(PREFIX + ":movies:trending", function(page) {
     view.movies.trending(page);
+});
+
+new page.Route(PREFIX + ":my:lists", function(page) {
+    view.my.lists(page);
+});
+
+new page.Route(PREFIX + ":my:list:(.*)", function(page, listId) {
+    view.my.list(page, listId);
 });
 
 new page.Route(PREFIX + ":my:watchlist:(.*)", function(page, type) {

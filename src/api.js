@@ -160,6 +160,15 @@ Api.__proto__ = StackTraceable.prototype;
  ******************************************************************************/
 
 exports.calendars = {
+    myMovies: function(startDate, numberDays, callback) {
+        Api.call("/calendars/my/movies/" + startDate + "/" + numberDays, {
+            method: 'GET',
+            args: {
+                extended: 'images'
+            }
+        }, callback);
+    },
+
     myShows: function(startDate, numberDays, callback) {
         Api.call("/calendars/my/shows/" + startDate + "/" + numberDays, {
             method: 'GET',
@@ -205,7 +214,7 @@ exports.movies.anticipated = function(pageNum, numberItemsPerPage, callback) {
 };
 
 exports.movies.played = function(pageNum, numberItemsPerPage, callback) {
-    Api.call("/movies/played", {
+    Api.call("/movies/played/weekly", {
         method: 'GET',
         args: {
             page: pageNum,
@@ -362,7 +371,7 @@ exports.shows.anticipated = function(pageNum, numberItemsPerPage, callback) {
 };
 
 exports.shows.played = function(pageNum, numberItemsPerPage, callback) {
-    Api.call("/shows/played", {
+    Api.call("/shows/played/weekly", {
         method: 'GET',
         args: {
             page: pageNum,
@@ -445,6 +454,26 @@ exports.scrobble.stop = function(item, progress, callback) {
     }, callback);
 };
 
+exports.users = {
+    lists: function(callback) {
+        Api.call("/users/me/lists", {
+            method: 'GET',
+            args: {}
+        }, callback);
+    },
+
+    listItems: function(listId, pageNum, numberItemsPerPage, callback) {
+        Api.call("/users/me/lists/" + listId + "/items", {
+            method: 'GET',
+            args: {
+                page: pageNum,
+                limit: numberItemsPerPage,
+                extended: 'images'
+            }
+        }, callback);
+    }
+};
+
 exports.sync = {
     addToHistory: function(postdata, callback) {
         Api.call("/sync/history", {
@@ -466,6 +495,17 @@ exports.sync = {
         Api.call(url, {
             method: 'GET',
             args: {}
+        }, callback);
+    },
+
+    getWatched: function(type, pageNum, numberItemsPerPage, callback) {
+        Api.call("/sync/history/" + type, {
+            method: 'GET',
+            args: {
+                page: pageNum,
+                limit: numberItemsPerPage,
+                extended: 'images'
+            }
         }, callback);
     },
 

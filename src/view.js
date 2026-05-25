@@ -6,7 +6,7 @@ function handleEpisodeItem(page, item, config) {
     var title = item.show.title +
         " - S" + utils.formatNumber(item.episode.season, 1) +
         "E" + utils.formatNumber(item.episode.number, 1);
-    var subtitle = new Date(Date.parse(item.first_aired)).toLocaleString();
+    var subtitle = new Date(item.first_aired).toLocaleString();
 
     var screenshot = utils.toImageSet(item.episode, 'screenshot', false);
     if (!screenshot) screenshot = utils.toImageSet(item.show, 'thumb', false);
@@ -139,6 +139,99 @@ function templateList(page, model, config) {
     loader();
 }
 
+/**
+ * Sets up watchlist check + add/remove toggle for a movie or show detail page.
+ * @param {object} opts
+ * @param {object} opts.page - the page object
+ * @param {string} opts.type - 'movies' or 'shows'
+ * @param {string} opts.typeName - 'movie' or 'TV show' (for notifications)
+ * @param {string} opts.itemKey - 'movie' or 'show' (key in watchlist items)
+ * @param {function} opts.getItem - returns the item object or null
+ * @param {function} opts.buildPostdata - builds postdata from item
+ * @param {object} opts.itemManipulateWatchlist - initial action item ref (mutated)
+ */
+function setupWatchlistToggle(opts) {
+    var page = opts.page;
+    var type = opts.type;
+    var typeName = opts.typeName;
+    var itemKey = opts.itemKey;
+
+    prop.subscribe(page.metadata.ids.trakt, function (event, data) {
+        if (event === "set" && data !== null) {
+            model.trakt.sync.getWatchlist(type, function (data, pagination, error) {
+                if (data) {
+                    var inWatchlist = false;
+                    for (var i in data) {
+                        var item = data[i];
+                        if (item[itemKey].ids.trakt === parseInt(page.metadata.ids.trakt.toString())) {
+                            inWatchlist = true;
+                            log.d(typeName + " is in watchlist!");
+                        }
+                    }
+
+                    if (!inWatchlist) {
+                        log.d(typeName + " is not in watchlist!");
+                    }
+
+                    page.metadata.inWatchlist = inWatchlist;
+                }
+            });
+        }
+    });
+
+    var itemManipulateWatchlist = opts.itemManipulateWatchlist;
+
+    prop.subscribe(page.metadata.inWatchlist, function (event, data) {
+        if (event === "set" && data !== null) {
+            if (data) {
+                var newItemManipulateWatchlist = page.appendAction('Remove from Watchlist', function (v) {
+                    log.d('Removing from watchlist');
+                    var currentItem = opts.getItem();
+                    if (currentItem) {
+                        var postdata = opts.buildPostdata(currentItem);
+                        model.trakt.sync.removeFromWatchlist(postdata, function (data, pagination, error) {
+                            if (data) {
+                                if (data.deleted[type] > 0) {
+                                    page.metadata.inWatchlist = false;
+                                    popup.notify("Removed successfully " + typeName + " from watchlist", 4);
+                                } else if (data.not_found[type] > 0) popup.notify("Trakt couldn't find the " + typeName + "...", 4);
+                            } else
+                                popup.notify("Failed to remove from watchlist", 3);
+                        });
+                    } else popup.notify("Operation not yet available", 3);
+                });
+
+                newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
+                itemManipulateWatchlist.destroy();
+                itemManipulateWatchlist = newItemManipulateWatchlist;
+
+            } else {
+                var newItemManipulateWatchlist = page.appendAction('Add to Watchlist', function (v) {
+                    log.d('Adding to watchlist');
+                    var currentItem = opts.getItem();
+                    if (currentItem) {
+                        var postdata = opts.buildPostdata(currentItem);
+                        model.trakt.sync.addToWatchlist(postdata, function (data, pagination, error) {
+                            if (data) {
+                                if (data.added[type] > 0) {
+                                    page.metadata.inWatchlist = true;
+                                    popup.notify("Added successfully " + typeName + " to watchlist", 4);
+                                } else if (data.existing[type] > 0) popup.notify(typeName + " was already in watchlist", 4);
+                                else if (data.not_found[type] > 0) popup.notify("Trakt couldn't find the " + typeName + "...", 4);
+                            } else
+                                popup.notify("Failed to add to watchlist", 3);
+                        });
+                    } else popup.notify("Operation not yet available", 3);
+                });
+
+                newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
+                itemManipulateWatchlist.destroy();
+                itemManipulateWatchlist = newItemManipulateWatchlist;
+            }
+        }
+    });
+}
+
 /*******************************************************************************
  * Exported Functions
  ******************************************************************************/
@@ -158,16 +251,21 @@ exports.landingPage = function (page) {
 
     // separators
     var firstSeparator = null;
-    /*if (auth.isAuthenticated()) {
+    if (auth.isAuthenticated()) {
         var separatorMoviesRecommended = page.appendPassiveItem('separator', null, {
             title: 'Movies - Recommended'
         });
-    }*/
+        firstSeparator = separatorMoviesRecommended;
+    }
     if (auth.isAuthenticated()) {
         var separatorUpcomingEpisodes = page.appendPassiveItem('separator', null, {
             title: 'Upcoming Episodes'
         });
         firstSeparator = separatorUpcomingEpisodes;
+
+        var separatorUpcomingMovies = page.appendPassiveItem('separator', null, {
+            title: 'Upcoming Movies'
+        });
 
         var separatorMoviesInWatchlist = page.appendPassiveItem('separator', null, {
             title: 'Movies in my Watchlist'
@@ -176,29 +274,37 @@ exports.landingPage = function (page) {
         var separatorTvShowsInWatchlist = page.appendPassiveItem('separator', null, {
             title: 'TV Shows in my Watchlist'
         });
+
+        var separatorRecentlyWatchedMovies = page.appendPassiveItem('separator', null, {
+            title: 'Recently Watched Movies'
+        });
+
+        var separatorRecentlyWatchedShows = page.appendPassiveItem('separator', null, {
+            title: 'Recently Watched Shows'
+        });
     }
     var separatorMoviesTrending = page.appendPassiveItem('separator', null, {
         title: 'Movies - Trending'
     });
     if (!firstSeparator) firstSeparator = separatorMoviesTrending;
-    /*var separatorMoviesPopular = page.appendPassiveItem('separator', null, {
+    var separatorMoviesPopular = page.appendPassiveItem('separator', null, {
         title: 'Movies - Popular'
-    });*/
-    /*var separatorMoviesMostPlayed = page.appendPassiveItem('separator', null, {
+    });
+    var separatorMoviesMostPlayed = page.appendPassiveItem('separator', null, {
         title: 'Movies - Most Played (Week)'
-    });*/
+    });
     var separatorMoviesMostAnticipated = page.appendPassiveItem('separator', null, {
         title: 'Movies - Most Anticipated'
     });
     var separatorShowsTrending = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Trending'
     });
-    /*var separatorShowsPopular = page.appendPassiveItem('separator', null, {
+    var separatorShowsPopular = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Popular'
-    });*/
-    /*var separatorShowsMostPlayed = page.appendPassiveItem('separator', null, {
+    });
+    var separatorShowsMostPlayed = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Most Played (Week)'
-    });*/
+    });
     var separatorShowsMostAnticipated = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Most Anticipated'
     });
@@ -206,15 +312,15 @@ exports.landingPage = function (page) {
         title: 'Other lists'
     });
 
-    /*if (auth.isAuthenticated()) {
-        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 4), {
+    if (auth.isAuthenticated()) {
+        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":recommendations:movies",
-            numberItems: 4,
+            numberItems: 9,
             itemType: 'movie',
-            beforeItem: separatorMoviesTrending
+            beforeItem: separatorUpcomingEpisodes
         });
-    }*/
+    }
 
     if (auth.isAuthenticated()) {
         var startDate = new Date();
@@ -223,6 +329,14 @@ exports.landingPage = function (page) {
             noPaginator: true,
             moreItemsUri: PREFIX + ":calendars:myshows",
             numberItems: 9,
+            beforeItem: separatorUpcomingMovies
+        });
+
+        templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
+            noPaginator: true,
+            moreItemsUri: PREFIX + ":calendars:mymovies",
+            numberItems: 9,
+            itemType: 'movie',
             beforeItem: separatorMoviesInWatchlist
         });
 
@@ -237,6 +351,21 @@ exports.landingPage = function (page) {
             noPaginator: true,
             moreItemsUri: PREFIX + ":my:watchlist:shows",
             numberItems: 9,
+            beforeItem: separatorRecentlyWatchedMovies
+        });
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
+            noPaginator: true,
+            moreItemsUri: PREFIX + ":history:movies",
+            numberItems: 9,
+            itemType: 'movie',
+            beforeItem: separatorRecentlyWatchedShows
+        });
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {
+            noPaginator: true,
+            moreItemsUri: PREFIX + ":history:shows",
+            numberItems: 9,
             beforeItem: separatorMoviesTrending
         });
     }
@@ -248,20 +377,20 @@ exports.landingPage = function (page) {
         beforeItem: separatorMoviesMostAnticipated
     });
 
-    /*templateList(page, model.trakt.movies.popular.bind(null, 1, 4), {
+    templateList(page, model.trakt.movies.popular.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:popular",
-        numberItems: 4,
+        numberItems: 9,
         itemType: 'movie',
-        beforeItem: separatorMoviesMostAnticipated
-    });*/
+        beforeItem: separatorMoviesMostPlayed
+    });
 
-    /*templateList(page, model.trakt.movies.played.bind(null, 1, 4), {
+    templateList(page, model.trakt.movies.played.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:played",
-        numberItems: 4,
+        numberItems: 9,
         beforeItem: separatorMoviesMostAnticipated
-    });*/
+    });
 
     templateList(page, model.trakt.movies.anticipated.bind(null, 1, 20), {
         noPaginator: true,
@@ -277,20 +406,20 @@ exports.landingPage = function (page) {
         beforeItem: separatorShowsMostAnticipated
     });
 
-    /*templateList(page, model.trakt.shows.popular.bind(null, 1, 4), {
+    templateList(page, model.trakt.shows.popular.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:popular",
-        numberItems: 4,
+        numberItems: 9,
         itemType: 'show',
-        beforeItem: separatorShowsMostAnticipated
-    });*/
+        beforeItem: separatorShowsMostPlayed
+    });
 
-    /*templateList(page, model.trakt.shows.played.bind(null, 1, 4), {
+    templateList(page, model.trakt.shows.played.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:played",
-        numberItems: 4,
+        numberItems: 9,
         beforeItem: separatorShowsMostAnticipated
-    });*/
+    });
 
     templateList(page, model.trakt.shows.anticipated.bind(null, 1, 20), {
         noPaginator: true,
@@ -308,23 +437,36 @@ exports.landingPage = function (page) {
             processedFirstMove = true;
 
             // Other lists
-            page.appendItem(PREFIX + ":movies:popular", 'directory', {
-                title: 'Movies - Most Popular'
-            });
-            page.appendItem(PREFIX + ":movies:played", 'directory', {
-                title: 'Movies - Most Played'
-            });
-            page.appendItem(PREFIX + ":shows:popular", 'directory', {
-                title: 'TV Shows - Most Popular'
-            });
-            page.appendItem(PREFIX + ":shows:played", 'directory', {
-                title: 'TV Shows - Most Played'
-            });
+            if (auth.isAuthenticated()) {
+                page.appendItem(PREFIX + ":recommendations:movies", 'directory', {
+                    title: 'Movies - Recommended'
+                });
+                page.appendItem(PREFIX + ":recommendations:shows", 'directory', {
+                    title: 'TV Shows - Recommended'
+                });
+                page.appendItem(PREFIX + ":my:lists", 'directory', {
+                    title: 'My Custom Lists'
+                });
+            }
         }
     });
 };
 
 exports.calendars = {
+    mymovies: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.metadata.title = "Upcoming Movies (Next 31 days)";
+        page.metadata.icon = plugin.getLogoPath();
+        page.loading = true;
+
+        var startDate = new Date();
+        startDate = startDate.getFullYear() + "-" + utils.formatNumber(startDate.getMonth() + 1, 2) + "-" + utils.formatNumber(startDate.getDate(), 2);
+        templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
+            itemType: 'movie'
+        });
+    },
+
     myshows: function (page) {
         page.type = 'directory';
         page.model.contents = 'grid';
@@ -372,7 +514,7 @@ exports.episode = function (page, show, season, episode, config) {
 
                 if (data && data.length > 0) {
                     page.metadata.seen = true;
-                    page.metadata.lastSeen = new Date(Date.parse(data[0].watched_at)).toLocaleString();
+                    page.metadata.lastSeen = new Date(data[0].watched_at).toLocaleString();
                 }
 
                 page.loading--;
@@ -384,7 +526,7 @@ exports.episode = function (page, show, season, episode, config) {
                 };
                 model.trakt.checkin(postdata, function (response, pagination, error) {
                     if (response) popup.notify("Successfully checked in", 3);
-                    else if (error.statuscode === 409) popup.notify("Already checked in", 3);
+                    else if (error && error.statuscode === 409) popup.notify("Already checked in", 3);
                     else popup.notify("Failed to check in", 3);
                 });
             });
@@ -475,6 +617,56 @@ exports.episode = function (page, show, season, episode, config) {
 
 exports.movies = {};
 
+exports.history = {
+    movies: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Recently Watched Movies";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
+            itemType: 'movie'
+        });
+    },
+
+    shows: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Recently Watched Shows";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {});
+    }
+};
+
+exports.recommendations = {
+    movies: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Movies - Recommended";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
+            itemType: 'movie'
+        });
+    },
+
+    shows: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "TV Shows - Recommended";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.recommendations.shows.bind(null, 1, 20), {
+            itemType: 'show'
+        });
+    }
+};
+
 exports.movies.anticipated = function (page) {
     page.type = 'directory';
     page.model.contents = 'grid';
@@ -556,7 +748,7 @@ exports.movie = function (page, id, config) {
                 };
                 model.trakt.checkin(postdata, function (response, pagination, error) {
                     if (response) popup.notify("Successfully checked in", 3);
-                    else if (error.statuscode === 409) popup.notify("Already checked in", 3);
+                    else if (error && error.statuscode === 409) popup.notify("Already checked in", 3);
                     else popup.notify("Failed to check in", 3);
                 });
             }).moveBefore(itemSimilar);
@@ -598,97 +790,10 @@ exports.movie = function (page, id, config) {
 
             if (data && data.length > 0) {
                 page.metadata.seen = true;
-                page.metadata.lastSeen = new Date(Date.parse(data[0].watched_at)).toLocaleString();
+                page.metadata.lastSeen = new Date(data[0].watched_at).toLocaleString();
             }
 
             page.loading--;
-        });
-
-        prop.subscribe(page.metadata.ids.trakt, function (event, data) {
-            if (event === "set" && data !== null) {
-                model.trakt.sync.getWatchlist('movies', function (data, pagination, error) {
-                    if (data) {
-                        var inWatchlist = false;
-                        for (var i in data) {
-                            var item = data[i];
-                            if (item.movie.ids.trakt === parseInt(page.metadata.ids.trakt.toString())) {
-                                inWatchlist = true;
-                                log.d("Movie is in watchlist!");
-                            }
-                        }
-
-                        if (!inWatchlist) {
-                            log.d("Movie is not in watchlist!");
-                        }
-
-                        page.metadata.inWatchlist = inWatchlist;
-                    }
-                });
-            }
-        });
-
-        prop.subscribe(page.metadata.inWatchlist, function (event, data) {
-            if (event === "set" && data !== null) {
-                if (data) {
-                    // in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Remove from Watchlist', function (v) {
-                        log.d('Removing from watchlist');
-                        if (movie) {
-                            var postdata = {
-                                movies: [{
-                                    ids: {
-                                        trakt: movie.ids.trakt,
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.removeFromWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.deleted.movies > 0) {
-                                        page.metadata.inWatchlist = false;
-                                        popup.notify("Removed successfully movie from watchlist", 4);
-                                    } else if (data.not_found.movies > 0) popup.notify("Trakt couldn't find the movie...", 4);
-                                } else
-                                    popup.notify("Failed to remove from watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-
-                } else {
-                    // not in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Add to Watchlist', function (v) {
-                        log.d('Adding to watchlist');
-                        if (movie) {
-                            var postdata = {
-                                movies: [{
-                                    ids: {
-                                        trakt: movie.ids.trakt,
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.addToWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.added.movies > 0) {
-                                        page.metadata.inWatchlist = true;
-                                        popup.notify("Added successfully movie to watchlist", 4);
-                                    } else if (data.existing.movies > 0) popup.notify("Movie was already in watchlist", 4);
-                                    else if (data.not_found.movies > 0) popup.notify("Trakt couldn't find the movie...", 4);
-                                } else
-                                    popup.notify("Failed to add to watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-                }
-            }
         });
     }
 
@@ -739,6 +844,18 @@ exports.movie = function (page, id, config) {
         var itemManipulateWatchlist = page.appendAction('Manipulate watchlist (not available)', function (v) {
             popup.notify("Operation not available right now", 3);
         });
+
+        setupWatchlistToggle({
+            page: page,
+            type: 'movies',
+            typeName: 'movie',
+            itemKey: 'movie',
+            getItem: function() { return movie; },
+            buildPostdata: function(m) {
+                return { movies: [{ ids: { trakt: m.ids.trakt } }] };
+            },
+            itemManipulateWatchlist: itemManipulateWatchlist
+        });
     }
 
     var itemSimilar = page.appendItem(PREFIX + ":movie:" + id + ":similar", 'directory', {
@@ -768,6 +885,36 @@ exports.my = {
         page.metadata.icon = plugin.getLogoPath();
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, type));
+    },
+
+    lists: function (page) {
+        page.type = 'directory';
+        page.loading = true;
+        page.metadata.title = "My Custom Lists";
+        page.metadata.icon = plugin.getLogoPath();
+
+        model.trakt.users.lists(function(data) {
+            if (data && data.length) {
+                for (var i = 0; i < data.length; i++) {
+                    var list = data[i];
+                    page.appendItem(PREFIX + ":my:list:" + list.ids.slug, 'directory', {
+                        title: list.name,
+                        subtitle: list.description || (list.item_count + ' items')
+                    });
+                }
+            }
+            page.loading = false;
+        });
+    },
+
+    list: function (page, listId) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Custom List";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.users.listItems.bind(null, listId, 1, 20), {});
     }
 };
 
@@ -1123,105 +1270,29 @@ exports.show = function (page, id, config) {
     }
 
     if (auth.isAuthenticated()) {
-        prop.subscribe(page.metadata.ids.trakt, function (event, data) {
-            if (event === "set" && data !== null) {
-                model.trakt.sync.getWatchlist('shows', function (data, pagination, error) {
-                    if (data) {
-                        var inWatchlist = false;
-                        for (var i in data) {
-                            var item = data[i];
-                            if (item.show.ids.trakt === parseInt(page.metadata.ids.trakt.toString())) {
-                                inWatchlist = true;
-                                log.d("TV show is in watchlist!");
-                            }
+        setupWatchlistToggle({
+            page: page,
+            type: 'shows',
+            typeName: 'TV show',
+            itemKey: 'show',
+            getItem: function() { return show; },
+            buildPostdata: function(s) {
+                return {
+                    shows: [{
+                        title: s.title,
+                        year: s.year,
+                        ids: {
+                            trakt: s.ids.trakt,
+                            slug: s.ids.slug,
+                            tvdb: s.ids.tvdb,
+                            imdb: s.ids.imdb,
+                            tmdb: s.ids.tmdb,
+                            tvrage: s.ids.tvrage
                         }
-
-                        if (!inWatchlist) {
-                            log.d("TV show is not in watchlist!");
-                        }
-
-                        page.metadata.inWatchlist = inWatchlist;
-                    }
-                });
-            }
-        });
-
-        prop.subscribe(page.metadata.inWatchlist, function (event, data) {
-            if (event === "set" && data !== null) {
-                if (data) {
-                    // in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Remove from Watchlist', function (v) {
-                        log.d('Removing from watchlist');
-                        if (show) {
-                            var postdata = {
-                                shows: [{
-                                    title: show.title,
-                                    year: show.year,
-                                    ids: {
-                                        trakt: show.ids.trakt,
-                                        slug: show.ids.slug,
-                                        tvdb: show.ids.tvdb,
-                                        imdb: show.ids.imdb,
-                                        tmdb: show.ids.tmdb,
-                                        tvrage: show.ids.tvrage
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.removeFromWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.deleted.shows > 0) {
-                                        page.metadata.inWatchlist = false;
-                                        popup.notify("Removed successfully TV show from watchlist", 4);
-                                    } else if (data.not_found.shows > 0) popup.notify("Trakt couldn't find the TV show...", 4);
-                                } else
-                                    popup.notify("Failed to remove from watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-
-                } else {
-                    // not in watchlist
-                    var newItemManipulateWatchlist = page.appendAction('Add to Watchlist', function (v) {
-                        log.d('Adding to watchlist');
-                        if (show) {
-                            var postdata = {
-                                shows: [{
-                                    title: show.title,
-                                    year: show.year,
-                                    ids: {
-                                        trakt: show.ids.trakt,
-                                        slug: show.ids.slug,
-                                        tvdb: show.ids.tvdb,
-                                        imdb: show.ids.imdb,
-                                        tmdb: show.ids.tmdb,
-                                        tvrage: show.ids.tvrage
-                                    }
-                                }]
-                            };
-                            model.trakt.sync.addToWatchlist(postdata, function (data, pagination, error) {
-                                if (data) {
-                                    if (data.added.shows > 0) {
-                                        page.metadata.inWatchlist = true;
-                                        popup.notify("Added successfully TV show to watchlist", 4);
-                                    } else if (data.existing.shows > 0) popup.notify("TV show was already in watchlist", 4);
-                                    else if (data.not_found.shows > 0) popup.notify("Trakt couldn't find the TV show...", 4);
-                                } else
-                                    popup.notify("Failed to add to watchlist", 3);
-                            });
-                        } else popup.notify("Operation not yet available", 3);
-                    });
-
-                    newItemManipulateWatchlist.moveBefore(itemManipulateWatchlist);
-
-                    itemManipulateWatchlist.destroy();
-                    itemManipulateWatchlist = newItemManipulateWatchlist;
-                }
-            }
+                    }]
+                };
+            },
+            itemManipulateWatchlist: itemManipulateWatchlist
         });
     }
 

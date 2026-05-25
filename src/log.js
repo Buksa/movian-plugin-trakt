@@ -29,12 +29,12 @@ exports.e = function(data) {
  * Useful when we want to know the stacktrace but we are not handling an exception.
  */
 exports.d.trace = function() {
-    log.d("Stacktrace:");
+    exports.d("Stacktrace:");
 
     var e = new Error();
     // slice 2 so to not print the line with "Error" and the line of current function
     var stack = e.stack.split("\n").slice(2).join("\n");
-    log.d(stack);
+    exports.d(stack);
 };
 
 /*
@@ -42,10 +42,10 @@ exports.d.trace = function() {
  * Useful when we want to know the stacktrace but we are not handling an exception.
  */
 exports.e.trace = function() {
-    log.e("Stacktrace:");
+    exports.e("Stacktrace:");
 
     var e = new Error();
     // slice 2 so to not print the line with "Error" and the line of current function
     var stack = e.stack.split("\n").slice(2).join("\n");
-    log.e(stack);
+    exports.e(stack);
 };
