@@ -1,10 +1,46 @@
 var StackTraceable = require('./stacktraceable');
+var io = require('native/io');
 
 exports.API_BASE_URL = "https://api.trakt.tv";
 
 // please use your own API KEY
 exports.CLIENT_ID = "c752231dbc78daf7c76d0b3fb2b7a18403e0a2c9b968bcbee5f79a0268ac5ea0";
 exports.CLIENT_SECRET = "437e14f28915d4afd752c0a9b3b9f8d690c1c8bdc91893f79c7ee50bb8bff48b";
+
+// Transparent auth interceptor — adds Authorization header and handles 401
+io.httpInspectorCreate('https://api.trakt.tv/.*', function(ctrl) {
+    // Skip OAuth endpoints to avoid auth loops
+    if (ctrl.url.indexOf('/oauth/') !== -1) {
+        ctrl.ignore();
+        return;
+    }
+
+    if (!ctrl.authFailed) {
+        if (credentials.apiauth)
+            ctrl.setHeader('Authorization', credentials.apiauth);
+        ctrl.proceed();
+        return;
+    }
+
+    // 401 received — clear current token and try to recover
+    credentials.apiauth = null;
+
+    if (credentials.refresh_token) {
+        auth.refreshToken();
+        if (credentials.apiauth) {
+            ctrl.setHeader('Authorization', credentials.apiauth);
+            ctrl.proceed();
+            return;
+        }
+    }
+
+    // Refresh failed or no refresh token — device-code login
+    auth.login(function(success) {
+        if (success && credentials.apiauth)
+            ctrl.setHeader('Authorization', credentials.apiauth);
+        ctrl.proceed();
+    });
+}, true);
 
 var Api = function() {
     return {
@@ -35,9 +71,6 @@ var Api = function() {
                 opts.headers['trakt-api-key'] = api.CLIENT_ID;
                 opts.headers['trakt-api-version'] = 2;
 
-                if (!opts.noAuth && auth.isAuthenticated())
-                    opts.headers.Authorization = auth.getAuthorizationHeader();
-
                 opts.noFail = true; // Don't throw on HTTP errors (400- status code)
                 opts.compression = true; // Will send 'Accept-Encoding: gzip' in request
                 opts.caching = true; // Enables Movian's built-in HTTP cache
@@ -59,18 +92,7 @@ var Api = function() {
 
                         log.d("HTTP status code: " + result.statuscode);
 
-                        if (result.statuscode === 401) {
-                            // auth failed
-                            if (credentials.apiauth) {
-                                // token expired
-                                auth.refreshToken();
-                            } else {
-                                // user auth needed
-                                auth.login();
-                            }
-                            if (credentials.apiauth)
-                                Api.call(uri, opts, callback);
-                        } else if (400 <= result.statuscode && result.statuscode < 600) {
+                        if (400 <= result.statuscode && result.statuscode < 600) {
                             var error = {
                                 statuscode: result.statuscode
                             };
@@ -84,11 +106,11 @@ var Api = function() {
                                 try {
                                     var pagination = null;
 
-                                    if (result.headers['X-Pagination-Item-Count']) {
+                                    if (result.headers['x-pagination-item-count']) {
                                         pagination = {
-                                            currentPage: parseInt(result.headers['X-Pagination-Page']),
-                                            itemCount: parseInt(result.headers['X-Pagination-Item-Count']),
-                                            pageCount: parseInt(result.headers['X-Pagination-Page-Count'])
+                                            currentPage: parseInt(result.headers['x-pagination-page']),
+                                            itemCount: parseInt(result.headers['x-pagination-item-count']),
+                                            pageCount: parseInt(result.headers['x-pagination-page-count'])
                                         };
 
                                         if (pagination.currentPage < pagination.pageCount) {
