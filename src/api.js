@@ -160,6 +160,15 @@ Api.__proto__ = StackTraceable.prototype;
  ******************************************************************************/
 
 exports.calendars = {
+    myMovies: function(startDate, numberDays, callback) {
+        Api.call("/calendars/my/movies/" + startDate + "/" + numberDays, {
+            method: 'GET',
+            args: {
+                extended: 'images'
+            }
+        }, callback);
+    },
+
     myShows: function(startDate, numberDays, callback) {
         Api.call("/calendars/my/shows/" + startDate + "/" + numberDays, {
             method: 'GET',

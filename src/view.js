@@ -170,6 +170,10 @@ exports.landingPage = function (page) {
         });
         firstSeparator = separatorUpcomingEpisodes;
 
+        var separatorUpcomingMovies = page.appendPassiveItem('separator', null, {
+            title: 'Upcoming Movies'
+        });
+
         var separatorMoviesInWatchlist = page.appendPassiveItem('separator', null, {
             title: 'Movies in my Watchlist'
         });
@@ -224,6 +228,14 @@ exports.landingPage = function (page) {
             noPaginator: true,
             moreItemsUri: PREFIX + ":calendars:myshows",
             numberItems: 9,
+            beforeItem: separatorUpcomingMovies
+        });
+
+        templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
+            noPaginator: true,
+            moreItemsUri: PREFIX + ":calendars:mymovies",
+            numberItems: 9,
+            itemType: 'movie',
             beforeItem: separatorMoviesInWatchlist
         });
 
@@ -320,6 +332,20 @@ exports.landingPage = function (page) {
 };
 
 exports.calendars = {
+    mymovies: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.metadata.title = "Upcoming Movies (Next 31 days)";
+        page.metadata.icon = plugin.getLogoPath();
+        page.loading = true;
+
+        var startDate = new Date();
+        startDate = startDate.getFullYear() + "-" + utils.formatNumber(startDate.getMonth() + 1, 2) + "-" + utils.formatNumber(startDate.getDate(), 2);
+        templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
+            itemType: 'movie'
+        });
+    },
+
     myshows: function (page) {
         page.type = 'directory';
         page.model.contents = 'grid';

@@ -6,6 +6,10 @@ var api = require('./api');
 exports.trakt = {};
 
 exports.trakt.calendars = {
+    myMovies: function(startDate, numberDays, callback) {
+        api.calendars.myMovies(startDate, numberDays, callback);
+    },
+
     myShows: function(startDate, numberDays, callback) {
         api.calendars.myShows(startDate, numberDays, callback);
     }

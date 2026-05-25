@@ -90,6 +90,10 @@ new page.Route(PREFIX + ":start", function(page) {
     view.landingPage(page);
 });
 
+new page.Route(PREFIX + ":calendars:mymovies", function(page) {
+    view.calendars.mymovies(page);
+});
+
 new page.Route(PREFIX + ":calendars:myshows", function(page) {
     view.calendars.myshows(page);
 });
