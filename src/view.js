@@ -182,24 +182,24 @@ exports.landingPage = function (page) {
         title: 'Movies - Trending'
     });
     if (!firstSeparator) firstSeparator = separatorMoviesTrending;
-    /*var separatorMoviesPopular = page.appendPassiveItem('separator', null, {
+    var separatorMoviesPopular = page.appendPassiveItem('separator', null, {
         title: 'Movies - Popular'
-    });*/
-    /*var separatorMoviesMostPlayed = page.appendPassiveItem('separator', null, {
+    });
+    var separatorMoviesMostPlayed = page.appendPassiveItem('separator', null, {
         title: 'Movies - Most Played (Week)'
-    });*/
+    });
     var separatorMoviesMostAnticipated = page.appendPassiveItem('separator', null, {
         title: 'Movies - Most Anticipated'
     });
     var separatorShowsTrending = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Trending'
     });
-    /*var separatorShowsPopular = page.appendPassiveItem('separator', null, {
+    var separatorShowsPopular = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Popular'
-    });*/
-    /*var separatorShowsMostPlayed = page.appendPassiveItem('separator', null, {
+    });
+    var separatorShowsMostPlayed = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Most Played (Week)'
-    });*/
+    });
     var separatorShowsMostAnticipated = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Most Anticipated'
     });
@@ -249,20 +249,20 @@ exports.landingPage = function (page) {
         beforeItem: separatorMoviesMostAnticipated
     });
 
-    /*templateList(page, model.trakt.movies.popular.bind(null, 1, 4), {
+    templateList(page, model.trakt.movies.popular.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:popular",
-        numberItems: 4,
+        numberItems: 9,
         itemType: 'movie',
-        beforeItem: separatorMoviesMostAnticipated
-    });*/
+        beforeItem: separatorMoviesMostPlayed
+    });
 
-    /*templateList(page, model.trakt.movies.played.bind(null, 1, 4), {
+    templateList(page, model.trakt.movies.played.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:played",
-        numberItems: 4,
+        numberItems: 9,
         beforeItem: separatorMoviesMostAnticipated
-    });*/
+    });
 
     templateList(page, model.trakt.movies.anticipated.bind(null, 1, 20), {
         noPaginator: true,
@@ -278,20 +278,20 @@ exports.landingPage = function (page) {
         beforeItem: separatorShowsMostAnticipated
     });
 
-    /*templateList(page, model.trakt.shows.popular.bind(null, 1, 4), {
+    templateList(page, model.trakt.shows.popular.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:popular",
-        numberItems: 4,
+        numberItems: 9,
         itemType: 'show',
-        beforeItem: separatorShowsMostAnticipated
-    });*/
+        beforeItem: separatorShowsMostPlayed
+    });
 
-    /*templateList(page, model.trakt.shows.played.bind(null, 1, 4), {
+    templateList(page, model.trakt.shows.played.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:played",
-        numberItems: 4,
+        numberItems: 9,
         beforeItem: separatorShowsMostAnticipated
-    });*/
+    });
 
     templateList(page, model.trakt.shows.anticipated.bind(null, 1, 20), {
         noPaginator: true,
@@ -309,17 +309,11 @@ exports.landingPage = function (page) {
             processedFirstMove = true;
 
             // Other lists
-            page.appendItem(PREFIX + ":movies:popular", 'directory', {
-                title: 'Movies - Most Popular'
+            page.appendItem(PREFIX + ":recommendations:movies", 'directory', {
+                title: 'Movies - Recommended'
             });
-            page.appendItem(PREFIX + ":movies:played", 'directory', {
-                title: 'Movies - Most Played'
-            });
-            page.appendItem(PREFIX + ":shows:popular", 'directory', {
-                title: 'TV Shows - Most Popular'
-            });
-            page.appendItem(PREFIX + ":shows:played", 'directory', {
-                title: 'TV Shows - Most Played'
+            page.appendItem(PREFIX + ":recommendations:shows", 'directory', {
+                title: 'TV Shows - Recommended'
             });
         }
     });
