@@ -106,6 +106,14 @@ new page.Route(PREFIX + ":movie:(.*):similar", function(page, id) {
     view.movie.similar(page, id);
 });
 
+new page.Route(PREFIX + ":recommendations:movies", function(page) {
+    view.recommendations.movies(page);
+});
+
+new page.Route(PREFIX + ":recommendations:shows", function(page) {
+    view.recommendations.shows(page);
+});
+
 new page.Route(PREFIX + ":movies:anticipated", function(page) {
     view.movies.anticipated(page);
 });

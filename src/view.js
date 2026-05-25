@@ -158,11 +158,12 @@ exports.landingPage = function (page) {
 
     // separators
     var firstSeparator = null;
-    /*if (auth.isAuthenticated()) {
+    if (auth.isAuthenticated()) {
         var separatorMoviesRecommended = page.appendPassiveItem('separator', null, {
             title: 'Movies - Recommended'
         });
-    }*/
+        firstSeparator = separatorMoviesRecommended;
+    }
     if (auth.isAuthenticated()) {
         var separatorUpcomingEpisodes = page.appendPassiveItem('separator', null, {
             title: 'Upcoming Episodes'
@@ -206,15 +207,15 @@ exports.landingPage = function (page) {
         title: 'Other lists'
     });
 
-    /*if (auth.isAuthenticated()) {
-        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 4), {
+    if (auth.isAuthenticated()) {
+        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":recommendations:movies",
-            numberItems: 4,
+            numberItems: 9,
             itemType: 'movie',
-            beforeItem: separatorMoviesTrending
+            beforeItem: separatorUpcomingEpisodes
         });
-    }*/
+    }
 
     if (auth.isAuthenticated()) {
         var startDate = new Date();
@@ -474,6 +475,32 @@ exports.episode = function (page, show, season, episode, config) {
 };
 
 exports.movies = {};
+
+exports.recommendations = {
+    movies: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Movies - Recommended";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
+            itemType: 'movie'
+        });
+    },
+
+    shows: function (page) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "TV Shows - Recommended";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.recommendations.shows.bind(null, 1, 20), {
+            itemType: 'show'
+        });
+    }
+};
 
 exports.movies.anticipated = function (page) {
     page.type = 'directory';
