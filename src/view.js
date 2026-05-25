@@ -795,18 +795,6 @@ exports.movie = function (page, id, config) {
 
             page.loading--;
         });
-
-        setupWatchlistToggle({
-            page: page,
-            type: 'movies',
-            typeName: 'movie',
-            itemKey: 'movie',
-            getItem: function() { return movie; },
-            buildPostdata: function(m) {
-                return { movies: [{ ids: { trakt: m.ids.trakt } }] };
-            },
-            itemManipulateWatchlist: itemManipulateWatchlist
-        });
     }
 
     prop.subscribe(page.metadata.imdbid, function (event, data) {
@@ -855,6 +843,18 @@ exports.movie = function (page, id, config) {
     if (auth.isAuthenticated()) {
         var itemManipulateWatchlist = page.appendAction('Manipulate watchlist (not available)', function (v) {
             popup.notify("Operation not available right now", 3);
+        });
+
+        setupWatchlistToggle({
+            page: page,
+            type: 'movies',
+            typeName: 'movie',
+            itemKey: 'movie',
+            getItem: function() { return movie; },
+            buildPostdata: function(m) {
+                return { movies: [{ ids: { trakt: m.ids.trakt } }] };
+            },
+            itemManipulateWatchlist: itemManipulateWatchlist
         });
     }
 
