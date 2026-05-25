@@ -121,6 +121,16 @@ exports.trakt.scrobble.stop = function(item, progress, callback) {
     api.scrobble.stop(item, progress, callback);
 };
 
+exports.trakt.users = {
+    lists: function(callback) {
+        api.users.lists(callback);
+    },
+
+    listItems: function(listId, pageNum, numberItemsPerPage, callback) {
+        api.users.listItems(listId, pageNum, numberItemsPerPage, callback);
+    }
+};
+
 exports.trakt.sync = {
     addToHistory: function(postdata, callback) {
         api.sync.addToHistory(postdata, callback);

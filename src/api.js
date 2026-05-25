@@ -454,6 +454,26 @@ exports.scrobble.stop = function(item, progress, callback) {
     }, callback);
 };
 
+exports.users = {
+    lists: function(callback) {
+        Api.call("/users/me/lists", {
+            method: 'GET',
+            args: {}
+        }, callback);
+    },
+
+    listItems: function(listId, pageNum, numberItemsPerPage, callback) {
+        Api.call("/users/me/lists/" + listId + "/items", {
+            method: 'GET',
+            args: {
+                page: pageNum,
+                limit: numberItemsPerPage,
+                extended: 'images'
+            }
+        }, callback);
+    }
+};
+
 exports.sync = {
     addToHistory: function(postdata, callback) {
         Api.call("/sync/history", {

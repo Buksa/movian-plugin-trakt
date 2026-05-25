@@ -142,6 +142,14 @@ new page.Route(PREFIX + ":movies:trending", function(page) {
     view.movies.trending(page);
 });
 
+new page.Route(PREFIX + ":my:lists", function(page) {
+    view.my.lists(page);
+});
+
+new page.Route(PREFIX + ":my:list:(.*)", function(page, listId) {
+    view.my.list(page, listId);
+});
+
 new page.Route(PREFIX + ":my:watchlist:(.*)", function(page, type) {
     view.my.watchlist(page, type);
 });

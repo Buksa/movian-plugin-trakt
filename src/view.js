@@ -350,6 +350,11 @@ exports.landingPage = function (page) {
             page.appendItem(PREFIX + ":recommendations:shows", 'directory', {
                 title: 'TV Shows - Recommended'
             });
+            if (auth.isAuthenticated()) {
+                page.appendItem(PREFIX + ":my:lists", 'directory', {
+                    title: 'My Custom Lists'
+                });
+            }
         }
     });
 };
@@ -862,6 +867,36 @@ exports.my = {
         page.metadata.icon = plugin.getLogoPath();
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, type));
+    },
+
+    lists: function (page) {
+        page.type = 'directory';
+        page.loading = true;
+        page.metadata.title = "My Custom Lists";
+        page.metadata.icon = plugin.getLogoPath();
+
+        model.trakt.users.lists(function(data) {
+            if (data && data.length) {
+                for (var i = 0; i < data.length; i++) {
+                    var list = data[i];
+                    page.appendItem(PREFIX + ":my:list:" + list.ids.slug, 'directory', {
+                        title: list.name,
+                        subtitle: list.description || (list.item_count + ' items')
+                    });
+                }
+            }
+            page.loading = false;
+        });
+    },
+
+    list: function (page, listId) {
+        page.type = 'directory';
+        page.model.contents = 'grid';
+        page.loading = true;
+        page.metadata.title = "Custom List";
+        page.metadata.icon = plugin.getLogoPath();
+
+        templateList(page, model.trakt.users.listItems.bind(null, listId, 1, 20), {});
     }
 };
 
