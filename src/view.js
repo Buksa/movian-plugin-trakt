@@ -437,13 +437,13 @@ exports.landingPage = function (page) {
             processedFirstMove = true;
 
             // Other lists
-            page.appendItem(PREFIX + ":recommendations:movies", 'directory', {
-                title: 'Movies - Recommended'
-            });
-            page.appendItem(PREFIX + ":recommendations:shows", 'directory', {
-                title: 'TV Shows - Recommended'
-            });
             if (auth.isAuthenticated()) {
+                page.appendItem(PREFIX + ":recommendations:movies", 'directory', {
+                    title: 'Movies - Recommended'
+                });
+                page.appendItem(PREFIX + ":recommendations:shows", 'directory', {
+                    title: 'TV Shows - Recommended'
+                });
                 page.appendItem(PREFIX + ":my:lists", 'directory', {
                     title: 'My Custom Lists'
                 });
