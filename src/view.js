@@ -6,7 +6,7 @@ function handleEpisodeItem(page, item, config) {
     var title = item.show.title +
         " - S" + utils.formatNumber(item.episode.season, 1) +
         "E" + utils.formatNumber(item.episode.number, 1);
-    var subtitle = new Date(Date.parse(item.first_aired)).toLocaleString();
+    var subtitle = new Date(item.first_aired).toLocaleString();
 
     var screenshot = utils.toImageSet(item.episode, 'screenshot', false);
     if (!screenshot) screenshot = utils.toImageSet(item.show, 'thumb', false);
@@ -372,7 +372,7 @@ exports.episode = function (page, show, season, episode, config) {
 
                 if (data && data.length > 0) {
                     page.metadata.seen = true;
-                    page.metadata.lastSeen = new Date(Date.parse(data[0].watched_at)).toLocaleString();
+                    page.metadata.lastSeen = new Date(data[0].watched_at).toLocaleString();
                 }
 
                 page.loading--;
@@ -598,7 +598,7 @@ exports.movie = function (page, id, config) {
 
             if (data && data.length > 0) {
                 page.metadata.seen = true;
-                page.metadata.lastSeen = new Date(Date.parse(data[0].watched_at)).toLocaleString();
+                page.metadata.lastSeen = new Date(data[0].watched_at).toLocaleString();
             }
 
             page.loading--;
