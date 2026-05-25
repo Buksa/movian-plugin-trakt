@@ -6,17 +6,24 @@ exports.getAuthorizationHeader = function() {
     return credentials.apiauth;
 };
 
-exports.login = function() {
-    var response = JSON.parse(http.request(api.API_BASE_URL + "/oauth/device/code", {
-        headers: {
-            'Content-Type': 'application/json',
-            'trakt-api-version': '2',
-            'trakt-api-key': api.CLIENT_ID
-        },
-        postdata: JSON.stringify({
-            client_id: api.CLIENT_ID
-        })
-    }));
+exports.login = function(done) {
+    var response;
+    try {
+        response = JSON.parse(http.request(api.API_BASE_URL + "/oauth/device/code", {
+            headers: {
+                'Content-Type': 'application/json',
+                'trakt-api-version': '2',
+                'trakt-api-key': api.CLIENT_ID
+            },
+            postdata: JSON.stringify({
+                client_id: api.CLIENT_ID
+            })
+        }));
+    } catch (e) {
+        log.e('Device code request failed: ' + e);
+        if (done) done(false);
+        return;
+    }
 
     var deviceCode = response.device_code;
 
@@ -63,21 +70,25 @@ exports.login = function() {
             // expired
             prop.destroy(message);
             popup.notify('Code expired. Try again.', 3);
+            if (done) done(false);
             return;
         } else if (response.statuscode === 418) {
             // denied
             prop.destroy(message);
             popup.notify('Authentication denied by user', 3);
+            if (done) done(false);
             return;
         } else if (response.statuscode === 404) {
             // invalid device_code
             prop.destroy(message);
             popup.notify('Invalid code. Try again.', 3);
+            if (done) done(false);
             return;
         } else if (response.statuscode === 409) {
             // already used
             prop.destroy(message);
             popup.notify('Code already used. Try again.', 3);
+            if (done) done(false);
             return;
         } else if (response.statuscode === 429) {
             // slow down
@@ -98,6 +109,7 @@ exports.login = function() {
 
         popup.notify('Successfully authenticated', 3);
 
+        if (done) done(true);
         return;
     }
 
@@ -110,6 +122,7 @@ exports.login = function() {
             prop.destroy(message);
             clearTimeout(timer);
             popup.notify('Cancelled by user', 3);
+            if (done) done(false);
         }
     }, {
         // This will make the subscription destroy itself when the popup
