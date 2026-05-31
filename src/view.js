@@ -411,7 +411,7 @@ exports.landingPage = function (page) {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:trending",
         numberItems: 9,
-        beforeItem: separatorMoviesMostAnticipated
+        beforeItem: separatorMoviesPopular
     });
 
     templateList(page, model.trakt.movies.popular.bind(null, 1, 20), {
@@ -440,7 +440,7 @@ exports.landingPage = function (page) {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:trending",
         numberItems: 9,
-        beforeItem: separatorShowsMostAnticipated
+        beforeItem: separatorShowsPopular
     });
 
     templateList(page, model.trakt.shows.popular.bind(null, 1, 20), {
