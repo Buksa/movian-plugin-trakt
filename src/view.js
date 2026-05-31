@@ -70,8 +70,13 @@ function templateList(page, model, config) {
             log.d("Cancelling pagination due to error:");
             log.e(error);
             page.haveMore(false);
-            if (config.destroyIfNoElements)
-                config.destroyIfNoElements.destroy();
+            if (config.destroyIfNoElements) {
+                if (typeof config.destroyIfNoElements === 'function')
+                    config.destroyIfNoElements();
+                else
+                    config.destroyIfNoElements.destroy();
+            }
+            if (config.onComplete) config.onComplete();
             return;
         }
 
@@ -111,7 +116,10 @@ function templateList(page, model, config) {
 
         if (processedEntries === 0) {
             if (config.destroyIfNoElements) {
-                config.destroyIfNoElements.destroy();
+                if (typeof config.destroyIfNoElements === 'function')
+                    config.destroyIfNoElements();
+                else
+                    config.destroyIfNoElements.destroy();
             } else {
                 var item = page.appendPassiveItem("default", null, {
                     "title": "There are no resources available"
@@ -135,6 +143,8 @@ function templateList(page, model, config) {
                 page.haveMore(true);
             }
         }
+
+        if (config.onComplete) config.onComplete();
     }, pageNum, numberItemsPerPage);
 
     if (!config.noPaginator) page.asyncPaginator = loader;
@@ -315,17 +325,29 @@ exports.landingPage = function (page) {
     });
 
     if (auth.isAuthenticated()) {
+        var authPending = 7;
+        var separatorsToDestroy = [];
+
+        function deferDestroy(separator) {
+            return function() { separatorsToDestroy.push(separator); };
+        }
+
+        function authComplete() {
+            if (--authPending > 0) return;
+            for (var i = 0; i < separatorsToDestroy.length; i++)
+                separatorsToDestroy[i].destroy();
+        }
+
         templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":recommendations:movies",
             numberItems: 9,
             itemType: 'movie',
             beforeItem: separatorUpcomingEpisodes,
-            destroyIfNoElements: separatorMoviesRecommended
+            destroyIfNoElements: deferDestroy(separatorMoviesRecommended),
+            onComplete: authComplete
         });
-    }
 
-    if (auth.isAuthenticated()) {
         var startDate = new Date();
         startDate = startDate.getFullYear() + "-" + utils.formatNumber(startDate.getMonth() + 1, 2) + "-" + utils.formatNumber(startDate.getDate(), 2);
         templateList(page, model.trakt.calendars.myShows.bind(null, startDate, 31), {
@@ -333,7 +355,8 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":calendars:myshows",
             numberItems: 9,
             beforeItem: separatorUpcomingMovies,
-            destroyIfNoElements: separatorUpcomingEpisodes
+            destroyIfNoElements: deferDestroy(separatorUpcomingEpisodes),
+            onComplete: authComplete
         });
 
         templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
@@ -342,7 +365,8 @@ exports.landingPage = function (page) {
             numberItems: 9,
             itemType: 'movie',
             beforeItem: separatorMoviesInWatchlist,
-            destroyIfNoElements: separatorUpcomingMovies
+            destroyIfNoElements: deferDestroy(separatorUpcomingMovies),
+            onComplete: authComplete
         });
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'movies'), {
@@ -350,7 +374,8 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":my:watchlist:movies",
             numberItems: 9,
             beforeItem: separatorTvShowsInWatchlist,
-            destroyIfNoElements: separatorMoviesInWatchlist
+            destroyIfNoElements: deferDestroy(separatorMoviesInWatchlist),
+            onComplete: authComplete
         });
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'shows'), {
@@ -358,7 +383,8 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":my:watchlist:shows",
             numberItems: 9,
             beforeItem: separatorRecentlyWatchedMovies,
-            destroyIfNoElements: separatorTvShowsInWatchlist
+            destroyIfNoElements: deferDestroy(separatorTvShowsInWatchlist),
+            onComplete: authComplete
         });
 
         templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
@@ -367,7 +393,8 @@ exports.landingPage = function (page) {
             numberItems: 9,
             itemType: 'movie',
             beforeItem: separatorRecentlyWatchedShows,
-            destroyIfNoElements: separatorRecentlyWatchedMovies
+            destroyIfNoElements: deferDestroy(separatorRecentlyWatchedMovies),
+            onComplete: authComplete
         });
 
         templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {
@@ -375,7 +402,8 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":history:shows",
             numberItems: 9,
             beforeItem: separatorMoviesTrending,
-            destroyIfNoElements: separatorRecentlyWatchedShows
+            destroyIfNoElements: deferDestroy(separatorRecentlyWatchedShows),
+            onComplete: authComplete
         });
     }
 
