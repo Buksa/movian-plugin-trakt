@@ -70,6 +70,8 @@ function templateList(page, model, config) {
             log.d("Cancelling pagination due to error:");
             log.e(error);
             page.haveMore(false);
+            if (config.destroyIfNoElements)
+                config.destroyIfNoElements.destroy();
             return;
         }
 
@@ -107,7 +109,7 @@ function templateList(page, model, config) {
             page.entries++;
         }
 
-        if (page.entries === 0) {
+        if (processedEntries === 0) {
             if (config.destroyIfNoElements) {
                 config.destroyIfNoElements.destroy();
             } else {
@@ -318,7 +320,8 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":recommendations:movies",
             numberItems: 9,
             itemType: 'movie',
-            beforeItem: separatorUpcomingEpisodes
+            beforeItem: separatorUpcomingEpisodes,
+            destroyIfNoElements: separatorMoviesRecommended
         });
     }
 
@@ -329,7 +332,8 @@ exports.landingPage = function (page) {
             noPaginator: true,
             moreItemsUri: PREFIX + ":calendars:myshows",
             numberItems: 9,
-            beforeItem: separatorUpcomingMovies
+            beforeItem: separatorUpcomingMovies,
+            destroyIfNoElements: separatorUpcomingEpisodes
         });
 
         templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
@@ -337,21 +341,24 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":calendars:mymovies",
             numberItems: 9,
             itemType: 'movie',
-            beforeItem: separatorMoviesInWatchlist
+            beforeItem: separatorMoviesInWatchlist,
+            destroyIfNoElements: separatorUpcomingMovies
         });
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'movies'), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":my:watchlist:movies",
             numberItems: 9,
-            beforeItem: separatorTvShowsInWatchlist
+            beforeItem: separatorTvShowsInWatchlist,
+            destroyIfNoElements: separatorMoviesInWatchlist
         });
 
         templateList(page, model.trakt.sync.getWatchlist.bind(null, 'shows'), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":my:watchlist:shows",
             numberItems: 9,
-            beforeItem: separatorRecentlyWatchedMovies
+            beforeItem: separatorRecentlyWatchedMovies,
+            destroyIfNoElements: separatorTvShowsInWatchlist
         });
 
         templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
@@ -359,14 +366,16 @@ exports.landingPage = function (page) {
             moreItemsUri: PREFIX + ":history:movies",
             numberItems: 9,
             itemType: 'movie',
-            beforeItem: separatorRecentlyWatchedShows
+            beforeItem: separatorRecentlyWatchedShows,
+            destroyIfNoElements: separatorRecentlyWatchedMovies
         });
 
         templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {
             noPaginator: true,
             moreItemsUri: PREFIX + ":history:shows",
             numberItems: 9,
-            beforeItem: separatorMoviesTrending
+            beforeItem: separatorMoviesTrending,
+            destroyIfNoElements: separatorRecentlyWatchedShows
         });
     }
 
