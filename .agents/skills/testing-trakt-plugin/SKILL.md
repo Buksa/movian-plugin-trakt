@@ -88,7 +88,7 @@ Then restart Movian. Public endpoints work without auth; auth-gated categories c
 
 **Auth-gated** (depend on user's Trakt account data):
 - Upcoming Episodes, Upcoming Movies
-- Movies/Shows Recommended
+- Movies Recommended
 - Movies/Shows in Watchlist
 - Recently Watched Movies/Shows
 
