@@ -253,9 +253,24 @@ exports.landingPage = function (page) {
     page.model.contents = 'grid';
     page.metadata.title = "Trakt - Home Page";
     page.metadata.icon = plugin.getLogoPath();
+    page.metadata.glwview = Plugin.path + "views/landing_grid.view";
+    page.metadata.traktLandingReady = false;
+    page.metadata.traktUserNavigated = false;
+    page.metadata.traktFocusDelay = 0;
     page.loading = true;
 
     page.entries = 0;
+
+    var isAuthenticated = auth.isAuthenticated();
+    var landingPending = 4 + (isAuthenticated ? 7 : 0);
+
+    function landingComplete() {
+        if (--landingPending === 0) {
+            page.metadata.traktLandingReady = true;
+            if (parseInt(page.metadata.traktUserNavigated.toString(), 10) === 0)
+                page.metadata.traktFocusDelay = 1;
+        }
+    }
 
     page.appendItem(PREFIX + ":search:", 'search', {
         title: 'Search'
@@ -263,13 +278,13 @@ exports.landingPage = function (page) {
 
     // separators
     var firstSeparator = null;
-    if (auth.isAuthenticated()) {
+    if (isAuthenticated) {
         var separatorMoviesRecommended = page.appendPassiveItem('separator', null, {
             title: 'Movies - Recommended'
         });
         firstSeparator = separatorMoviesRecommended;
     }
-    if (auth.isAuthenticated()) {
+    if (isAuthenticated) {
         var separatorUpcomingEpisodes = page.appendPassiveItem('separator', null, {
             title: 'Upcoming Episodes'
         });
@@ -299,23 +314,11 @@ exports.landingPage = function (page) {
         title: 'Movies - Trending'
     });
     if (!firstSeparator) firstSeparator = separatorMoviesTrending;
-    var separatorMoviesPopular = page.appendPassiveItem('separator', null, {
-        title: 'Movies - Popular'
-    });
-    var separatorMoviesMostPlayed = page.appendPassiveItem('separator', null, {
-        title: 'Movies - Most Played (Week)'
-    });
     var separatorMoviesMostAnticipated = page.appendPassiveItem('separator', null, {
         title: 'Movies - Most Anticipated'
     });
     var separatorShowsTrending = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Trending'
-    });
-    var separatorShowsPopular = page.appendPassiveItem('separator', null, {
-        title: 'TV Shows - Popular'
-    });
-    var separatorShowsMostPlayed = page.appendPassiveItem('separator', null, {
-        title: 'TV Shows - Most Played (Week)'
     });
     var separatorShowsMostAnticipated = page.appendPassiveItem('separator', null, {
         title: 'TV Shows - Most Anticipated'
@@ -324,7 +327,7 @@ exports.landingPage = function (page) {
         title: 'Other lists'
     });
 
-    if (auth.isAuthenticated()) {
+    if (isAuthenticated) {
         var authPending = 7;
         var separatorsToDestroy = [];
 
@@ -333,9 +336,11 @@ exports.landingPage = function (page) {
         }
 
         function authComplete() {
-            if (--authPending > 0) return;
-            for (var i = 0; i < separatorsToDestroy.length; i++)
-                separatorsToDestroy[i].destroy();
+            if (--authPending === 0) {
+                for (var i = 0; i < separatorsToDestroy.length; i++)
+                    separatorsToDestroy[i].destroy();
+            }
+            landingComplete();
         }
 
         templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
@@ -411,58 +416,32 @@ exports.landingPage = function (page) {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:trending",
         numberItems: 9,
-        beforeItem: separatorMoviesPopular
-    });
-
-    templateList(page, model.trakt.movies.popular.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":movies:popular",
-        numberItems: 9,
-        itemType: 'movie',
-        beforeItem: separatorMoviesMostPlayed
-    });
-
-    templateList(page, model.trakt.movies.played.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":movies:played",
-        numberItems: 9,
-        beforeItem: separatorMoviesMostAnticipated
+        beforeItem: separatorMoviesMostAnticipated,
+        onComplete: landingComplete
     });
 
     templateList(page, model.trakt.movies.anticipated.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":movies:anticipated",
         numberItems: 9,
-        beforeItem: separatorShowsTrending
+        beforeItem: separatorShowsTrending,
+        onComplete: landingComplete
     });
 
     templateList(page, model.trakt.shows.trending.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:trending",
         numberItems: 9,
-        beforeItem: separatorShowsPopular
-    });
-
-    templateList(page, model.trakt.shows.popular.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":shows:popular",
-        numberItems: 9,
-        itemType: 'show',
-        beforeItem: separatorShowsMostPlayed
-    });
-
-    templateList(page, model.trakt.shows.played.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":shows:played",
-        numberItems: 9,
-        beforeItem: separatorShowsMostAnticipated
+        beforeItem: separatorShowsMostAnticipated,
+        onComplete: landingComplete
     });
 
     templateList(page, model.trakt.shows.anticipated.bind(null, 1, 20), {
         noPaginator: true,
         moreItemsUri: PREFIX + ":shows:anticipated",
         numberItems: 9,
-        beforeItem: separatorOtherLists
+        beforeItem: separatorOtherLists,
+        onComplete: landingComplete
     });
 
 
@@ -474,7 +453,19 @@ exports.landingPage = function (page) {
             processedFirstMove = true;
 
             // Other lists
-            if (auth.isAuthenticated()) {
+            page.appendItem(PREFIX + ":movies:popular", 'directory', {
+                title: 'Movies - Most Popular'
+            });
+            page.appendItem(PREFIX + ":movies:played", 'directory', {
+                title: 'Movies - Most Played (Week)'
+            });
+            page.appendItem(PREFIX + ":shows:popular", 'directory', {
+                title: 'TV Shows - Most Popular'
+            });
+            page.appendItem(PREFIX + ":shows:played", 'directory', {
+                title: 'TV Shows - Most Played (Week)'
+            });
+            if (isAuthenticated) {
                 page.appendItem(PREFIX + ":recommendations:movies", 'directory', {
                     title: 'Movies - Recommended'
                 });

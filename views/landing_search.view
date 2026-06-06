@@ -1,0 +1,58 @@
+#include "skin://theme.view"
+
+onInactivity($parent.model.metadata.traktFocusDelay, {
+  focus("trakt-landing-search");
+});
+
+widget(container_x, {
+  id: "trakt-landing-search";
+  style: "ListItem";
+  divider: true;
+
+  widget(container_z, {
+    filterConstraintX: true;
+
+    widget(quad, {
+      color: 0;
+    });
+
+    widget(container_x, {
+      height: 2em;
+      padding: [0.5em, 0];
+      spacing: 0.5em;
+
+      widget(icon, {
+        fhpSpill: true;
+        size: 1.2em;
+        source: "skin://icons/ic_search_48px.svg";
+        alpha: 0.3 + isNavFocused();
+      });
+
+      zbox({
+        filterConstraintX: true;
+
+        label({
+          hidden: $view.searchQuery ? true : false;
+          caption: $self.metadata.title;
+          size: 1.2em;
+          font: "skin://fonts/RobotoCondensed-Regular.ttf";
+          color: 0.5;
+        });
+
+        widget(text, {
+          filterConstraintX: true;
+          padding: [0, 0.4em];
+          size: 1.2em;
+          font: "skin://fonts/RobotoCondensed-Regular.ttf";
+          focusable: 0.1;
+
+          bind($view.searchQuery);
+          onEvent(enter, navOpen($self.url + $view.searchQuery),
+                  $view.searchQuery);
+          onEvent(submit, navOpen($self.url + $view.searchQuery),
+                  $view.searchQuery);
+        });
+      });
+    });
+  });
+});
