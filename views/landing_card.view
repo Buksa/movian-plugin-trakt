@@ -1,0 +1,25 @@
+widget(container_y, {
+  focusable: true;
+  width: select($ui.aspect > 1, 10em, 8em);
+  height: select($ui.aspect > 1, 6.5em, 5.5em);
+  onEvent(activate, navOpen($self.url));
+
+  widget(container_z, {
+    height: select($ui.aspect > 1, 5.4em, 4.4em);
+
+    widget(image, {
+      source: $self.metadata.icon ??
+        "skin://icons/ic_folder_48px.svg";
+      style: "GridBackdrop";
+    });
+
+    widget(border, {
+      style: "GridBorder";
+    });
+  });
+
+  widget(label, {
+    style: "GridLabel";
+    caption: $self.metadata.title;
+  });
+});

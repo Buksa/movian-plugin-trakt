@@ -151,6 +151,160 @@ function templateList(page, model, config) {
     loader();
 }
 
+function landingEpisodeCard(item) {
+    if (!item || !item.show || !item.episode) return null;
+
+    var title = item.show.title +
+        " - S" + utils.formatNumber(item.episode.season, 1) +
+        "E" + utils.formatNumber(item.episode.number, 1);
+    var subtitle = item.first_aired ?
+        new Date(item.first_aired).toLocaleString() : null;
+
+    var screenshot = utils.toImageSet(item.episode, 'screenshot', false);
+    if (!screenshot) screenshot = utils.toImageSet(item.show, 'thumb', false);
+    if (!screenshot) screenshot = utils.toImageSet(item.show, 'fanart', true);
+
+    return {
+        url: PREFIX + ":show:" + item.show.ids.trakt +
+            ":season:" + item.episode.season +
+            ":episode:" + item.episode.number,
+        type: "directory",
+        metadata: {
+            title: title,
+            subtitle: subtitle,
+            icon: screenshot
+        }
+    };
+}
+
+function landingMovieCard(item) {
+    if (!item || !item.ids) return null;
+
+    return {
+        url: PREFIX + ":movie:" + item.ids.trakt,
+        type: "directory",
+        metadata: {
+            title: item.title,
+            icon: utils.toImageSet(item, 'fanart', true)
+        }
+    };
+}
+
+function landingShowCard(item) {
+    if (!item || !item.ids) return null;
+
+    var image = utils.toImageSet(item, 'thumb', false);
+    if (!image) image = utils.toImageSet(item, 'fanart', true);
+
+    return {
+        url: PREFIX + ":show:" + item.ids.trakt,
+        type: "directory",
+        metadata: {
+            title: item.title,
+            icon: image
+        }
+    };
+}
+
+function landingCard(item, itemType) {
+    if (!item) return null;
+    if (item.movie) return landingMovieCard(item.movie);
+    if (item.episode) return landingEpisodeCard(item);
+    if (item.show) return landingShowCard(item.show);
+    if (itemType === 'movie') return landingMovieCard(item);
+    if (itemType === 'show') return landingShowCard(item);
+
+    log.e('Unknown landing item type.');
+    return null;
+}
+
+function landingLinkCard(url, title) {
+    return {
+        url: url,
+        type: "directory",
+        metadata: {
+            title: title
+        }
+    };
+}
+
+function createLandingSection(page, title, cards) {
+    return page.appendPassiveItem('landingSection', cards || [], {
+        title: title
+    });
+}
+
+function loadLandingSection(page, section, loader, config, onComplete) {
+    config = config || {};
+    var completed = false;
+
+    function complete() {
+        if (completed) return;
+        completed = true;
+        onComplete();
+    }
+
+    function removeSection() {
+        section.destroy();
+        complete();
+    }
+
+    try {
+        loader(function(data, pagination, error) {
+            if (completed) return;
+
+            try {
+                if (error) {
+                    log.d("Removing landing section due to error:");
+                    log.e(error);
+                    removeSection();
+                    return;
+                }
+
+                var cards = [];
+                var limit = config.numberItems || 9;
+                var hadMore = false;
+
+                data = data || [];
+                for (var i = 0; i < data.length; i++) {
+                    if (cards.length >= limit) {
+                        hadMore = true;
+                        break;
+                    }
+
+                    var card = landingCard(data[i], config.itemType);
+                    if (!card) continue;
+
+                    cards.push(card);
+                    page.entries++;
+                }
+
+                if (cards.length === 0) {
+                    removeSection();
+                    return;
+                }
+
+                var hasMore = hadMore ||
+                    (pagination && (pagination.hasNext ||
+                        pagination.itemCount > cards.length));
+                if (config.moreItemsUri && hasMore)
+                    cards.push(landingLinkCard(config.moreItemsUri, "See more"));
+
+                section.root.data = cards;
+                complete();
+            } catch (error) {
+                log.d("Removing landing section after callback exception:");
+                log.e(error);
+                removeSection();
+            }
+        });
+    } catch (error) {
+        log.d("Removing landing section after loader exception:");
+        log.e(error);
+        removeSection();
+    }
+}
+
 /**
  * Sets up watchlist check + add/remove toggle for a movie or show detail page.
  * @param {object} opts
@@ -253,7 +407,7 @@ exports.landingPage = function (page) {
     page.model.contents = 'grid';
     page.metadata.title = "Trakt - Home Page";
     page.metadata.icon = plugin.getLogoPath();
-    page.metadata.glwview = Plugin.path + "views/landing_grid.view";
+    page.metadata.glwview = Plugin.path + "views/landing_shelf.view";
     page.metadata.traktLandingReady = 0;
     page.metadata.traktUserNavigated = 0;
     page.metadata.traktFocusDelay = 0;
@@ -266,6 +420,7 @@ exports.landingPage = function (page) {
 
     function landingComplete() {
         if (--landingPending === 0) {
+            page.loading = false;
             page.metadata.traktLandingReady = 1;
             if (parseInt(page.metadata.traktUserNavigated.toString(), 10) === 0)
                 page.metadata.traktFocusDelay = 1;
@@ -276,208 +431,130 @@ exports.landingPage = function (page) {
         title: 'Search'
     });
 
-    // separators
-    var firstSeparator = null;
-    if (isAuthenticated) {
-        var separatorMoviesRecommended = page.appendPassiveItem('separator', null, {
-            title: 'Movies - Recommended'
-        });
-        firstSeparator = separatorMoviesRecommended;
-    }
-    if (isAuthenticated) {
-        var separatorUpcomingEpisodes = page.appendPassiveItem('separator', null, {
-            title: 'Upcoming Episodes'
-        });
-        firstSeparator = separatorUpcomingEpisodes;
-
-        var separatorUpcomingMovies = page.appendPassiveItem('separator', null, {
-            title: 'Upcoming Movies'
-        });
-
-        var separatorMoviesInWatchlist = page.appendPassiveItem('separator', null, {
-            title: 'Movies in my Watchlist'
-        });
-
-        var separatorTvShowsInWatchlist = page.appendPassiveItem('separator', null, {
-            title: 'TV Shows in my Watchlist'
-        });
-
-        var separatorRecentlyWatchedMovies = page.appendPassiveItem('separator', null, {
-            title: 'Recently Watched Movies'
-        });
-
-        var separatorRecentlyWatchedShows = page.appendPassiveItem('separator', null, {
-            title: 'Recently Watched Shows'
-        });
-    }
-    var separatorMoviesTrending = page.appendPassiveItem('separator', null, {
-        title: 'Movies - Trending'
-    });
-    if (!firstSeparator) firstSeparator = separatorMoviesTrending;
-    var separatorMoviesMostAnticipated = page.appendPassiveItem('separator', null, {
-        title: 'Movies - Most Anticipated'
-    });
-    var separatorShowsTrending = page.appendPassiveItem('separator', null, {
-        title: 'TV Shows - Trending'
-    });
-    var separatorShowsMostAnticipated = page.appendPassiveItem('separator', null, {
-        title: 'TV Shows - Most Anticipated'
-    });
-    var separatorOtherLists = page.appendPassiveItem('separator', null, {
-        title: 'Other lists'
-    });
+    var sections = [];
+    var startDate;
 
     if (isAuthenticated) {
-        var authPending = 7;
-        var separatorsToDestroy = [];
+        startDate = new Date();
+        startDate = startDate.getFullYear() + "-" +
+            utils.formatNumber(startDate.getMonth() + 1, 2) + "-" +
+            utils.formatNumber(startDate.getDate(), 2);
 
-        function deferDestroy(separator) {
-            return function() { separatorsToDestroy.push(separator); };
-        }
-
-        function authComplete() {
-            if (--authPending === 0) {
-                for (var i = 0; i < separatorsToDestroy.length; i++)
-                    separatorsToDestroy[i].destroy();
+        sections.push({
+            node: createLandingSection(page, 'Movies - Recommended'),
+            loader: model.trakt.recommendations.movies.bind(null, 1, 20),
+            config: {
+                itemType: 'movie',
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":recommendations:movies"
             }
-            landingComplete();
-        }
-
-        templateList(page, model.trakt.recommendations.movies.bind(null, 1, 20), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":recommendations:movies",
-            numberItems: 9,
-            itemType: 'movie',
-            beforeItem: separatorUpcomingEpisodes,
-            destroyIfNoElements: deferDestroy(separatorMoviesRecommended),
-            onComplete: authComplete
         });
-
-        var startDate = new Date();
-        startDate = startDate.getFullYear() + "-" + utils.formatNumber(startDate.getMonth() + 1, 2) + "-" + utils.formatNumber(startDate.getDate(), 2);
-        templateList(page, model.trakt.calendars.myShows.bind(null, startDate, 31), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":calendars:myshows",
-            numberItems: 9,
-            beforeItem: separatorUpcomingMovies,
-            destroyIfNoElements: deferDestroy(separatorUpcomingEpisodes),
-            onComplete: authComplete
+        sections.push({
+            node: createLandingSection(page, 'Upcoming Episodes'),
+            loader: model.trakt.calendars.myShows.bind(null, startDate, 31),
+            config: {
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":calendars:myshows"
+            }
         });
-
-        templateList(page, model.trakt.calendars.myMovies.bind(null, startDate, 31), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":calendars:mymovies",
-            numberItems: 9,
-            itemType: 'movie',
-            beforeItem: separatorMoviesInWatchlist,
-            destroyIfNoElements: deferDestroy(separatorUpcomingMovies),
-            onComplete: authComplete
+        sections.push({
+            node: createLandingSection(page, 'Upcoming Movies'),
+            loader: model.trakt.calendars.myMovies.bind(null, startDate, 31),
+            config: {
+                itemType: 'movie',
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":calendars:mymovies"
+            }
         });
-
-        templateList(page, model.trakt.sync.getWatchlist.bind(null, 'movies'), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":my:watchlist:movies",
-            numberItems: 9,
-            beforeItem: separatorTvShowsInWatchlist,
-            destroyIfNoElements: deferDestroy(separatorMoviesInWatchlist),
-            onComplete: authComplete
+        sections.push({
+            node: createLandingSection(page, 'Movies in my Watchlist'),
+            loader: model.trakt.sync.getWatchlist.bind(null, 'movies'),
+            config: {
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":my:watchlist:movies"
+            }
         });
-
-        templateList(page, model.trakt.sync.getWatchlist.bind(null, 'shows'), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":my:watchlist:shows",
-            numberItems: 9,
-            beforeItem: separatorRecentlyWatchedMovies,
-            destroyIfNoElements: deferDestroy(separatorTvShowsInWatchlist),
-            onComplete: authComplete
+        sections.push({
+            node: createLandingSection(page, 'TV Shows in my Watchlist'),
+            loader: model.trakt.sync.getWatchlist.bind(null, 'shows'),
+            config: {
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":my:watchlist:shows"
+            }
         });
-
-        templateList(page, model.trakt.sync.getWatched.bind(null, 'movies', 1, 20), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":history:movies",
-            numberItems: 9,
-            itemType: 'movie',
-            beforeItem: separatorRecentlyWatchedShows,
-            destroyIfNoElements: deferDestroy(separatorRecentlyWatchedMovies),
-            onComplete: authComplete
+        sections.push({
+            node: createLandingSection(page, 'Recently Watched Movies'),
+            loader: model.trakt.sync.getWatched.bind(null, 'movies', 1, 20),
+            config: {
+                itemType: 'movie',
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":history:movies"
+            }
         });
-
-        templateList(page, model.trakt.sync.getWatched.bind(null, 'shows', 1, 20), {
-            noPaginator: true,
-            moreItemsUri: PREFIX + ":history:shows",
-            numberItems: 9,
-            beforeItem: separatorMoviesTrending,
-            destroyIfNoElements: deferDestroy(separatorRecentlyWatchedShows),
-            onComplete: authComplete
+        sections.push({
+            node: createLandingSection(page, 'Recently Watched Shows'),
+            loader: model.trakt.sync.getWatched.bind(null, 'shows', 1, 20),
+            config: {
+                numberItems: 9,
+                moreItemsUri: PREFIX + ":history:shows"
+            }
         });
     }
 
-    templateList(page, model.trakt.movies.trending.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":movies:trending",
-        numberItems: 9,
-        beforeItem: separatorMoviesMostAnticipated,
-        onComplete: landingComplete
-    });
-
-    templateList(page, model.trakt.movies.anticipated.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":movies:anticipated",
-        numberItems: 9,
-        beforeItem: separatorShowsTrending,
-        onComplete: landingComplete
-    });
-
-    templateList(page, model.trakt.shows.trending.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":shows:trending",
-        numberItems: 9,
-        beforeItem: separatorShowsMostAnticipated,
-        onComplete: landingComplete
-    });
-
-    templateList(page, model.trakt.shows.anticipated.bind(null, 1, 20), {
-        noPaginator: true,
-        moreItemsUri: PREFIX + ":shows:anticipated",
-        numberItems: 9,
-        beforeItem: separatorOtherLists,
-        onComplete: landingComplete
-    });
-
-
-    //log.d(page.entries);
-    var processedFirstMove = false;
-    prop.subscribe(page.model.nodes, function (event, data) {
-        if (event === "movechild" && !processedFirstMove) {
-            // we only have movechilds when adding actual items
-            processedFirstMove = true;
-
-            // Other lists
-            page.appendItem(PREFIX + ":movies:popular", 'directory', {
-                title: 'Movies - Most Popular'
-            });
-            page.appendItem(PREFIX + ":movies:played", 'directory', {
-                title: 'Movies - Most Played (Week)'
-            });
-            page.appendItem(PREFIX + ":shows:popular", 'directory', {
-                title: 'TV Shows - Most Popular'
-            });
-            page.appendItem(PREFIX + ":shows:played", 'directory', {
-                title: 'TV Shows - Most Played (Week)'
-            });
-            if (isAuthenticated) {
-                page.appendItem(PREFIX + ":recommendations:movies", 'directory', {
-                    title: 'Movies - Recommended'
-                });
-                page.appendItem(PREFIX + ":recommendations:shows", 'directory', {
-                    title: 'TV Shows - Recommended'
-                });
-                page.appendItem(PREFIX + ":my:lists", 'directory', {
-                    title: 'My Custom Lists'
-                });
-            }
+    sections.push({
+        node: createLandingSection(page, 'Movies - Trending'),
+        loader: model.trakt.movies.trending.bind(null, 1, 20),
+        config: {
+            numberItems: 9,
+            moreItemsUri: PREFIX + ":movies:trending"
         }
     });
+    sections.push({
+        node: createLandingSection(page, 'Movies - Most Anticipated'),
+        loader: model.trakt.movies.anticipated.bind(null, 1, 20),
+        config: {
+            numberItems: 9,
+            moreItemsUri: PREFIX + ":movies:anticipated"
+        }
+    });
+    sections.push({
+        node: createLandingSection(page, 'TV Shows - Trending'),
+        loader: model.trakt.shows.trending.bind(null, 1, 20),
+        config: {
+            numberItems: 9,
+            moreItemsUri: PREFIX + ":shows:trending"
+        }
+    });
+    sections.push({
+        node: createLandingSection(page, 'TV Shows - Most Anticipated'),
+        loader: model.trakt.shows.anticipated.bind(null, 1, 20),
+        config: {
+            numberItems: 9,
+            moreItemsUri: PREFIX + ":shows:anticipated"
+        }
+    });
+
+    var otherLists = [
+        landingLinkCard(PREFIX + ":movies:popular", 'Movies - Most Popular'),
+        landingLinkCard(PREFIX + ":movies:played", 'Movies - Most Played (Week)'),
+        landingLinkCard(PREFIX + ":shows:popular", 'TV Shows - Most Popular'),
+        landingLinkCard(PREFIX + ":shows:played", 'TV Shows - Most Played (Week)')
+    ];
+    if (isAuthenticated) {
+        otherLists.push(
+            landingLinkCard(PREFIX + ":recommendations:movies",
+                'Movies - Recommended'),
+            landingLinkCard(PREFIX + ":recommendations:shows",
+                'TV Shows - Recommended'),
+            landingLinkCard(PREFIX + ":my:lists", 'My Custom Lists')
+        );
+    }
+    createLandingSection(page, 'Other lists', otherLists);
+
+    for (var i = 0; i < sections.length; i++) {
+        loadLandingSection(page, sections[i].node, sections[i].loader,
+            sections[i].config, landingComplete);
+    }
 };
 
 exports.calendars = {

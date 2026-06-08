@@ -1,0 +1,22 @@
+widget(container_y, {
+  height: select($ui.aspect > 1, 8.2em, 7em);
+  spacing: 0.25em;
+
+  widget(label, {
+    style: "GridItemSeparatorLabel";
+    caption: $self.metadata.title;
+  });
+
+  widget(list_x, {
+    height: select($ui.aspect > 1, 6.5em, 5.5em);
+    spacing: 0.5em;
+    focusable: 1;
+    chaseFocus: 0;
+    navWrap: false;
+
+    cloner($self.data, loader, {
+      onEvent(copy, deliverRef($core.clipboard.setFromItem, $self));
+      source: "landing_card.view";
+    });
+  });
+});

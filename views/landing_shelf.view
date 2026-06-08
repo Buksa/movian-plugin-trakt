@@ -1,0 +1,59 @@
+#import "skin://theme.view"
+#import "skin://styles/style_grid.view"
+
+widget(container_z, {
+  onEvent(up, {
+    $self.model.metadata.traktUserNavigated = 1;
+    $self.model.metadata.traktFocusDelay = 0;
+  }, true, false, true);
+  onEvent(down, {
+    $self.model.metadata.traktUserNavigated = 1;
+    $self.model.metadata.traktFocusDelay = 0;
+  }, true, false, true);
+  onEvent(left, {
+    $self.model.metadata.traktUserNavigated = 1;
+    $self.model.metadata.traktFocusDelay = 0;
+  }, true, false, true);
+  onEvent(right, {
+    $self.model.metadata.traktUserNavigated = 1;
+    $self.model.metadata.traktFocusDelay = 0;
+  }, true, false, true);
+  onEvent(activate, {
+    $self.model.metadata.traktUserNavigated = 1;
+    $self.model.metadata.traktFocusDelay = 0;
+  }, true, false, true);
+
+  widget(list_y, {
+    id: "scrollable";
+    margin: [1em, 0, 1em, 0];
+    padding: [0, 0.4em, 0, $ui.universeBottomHeight];
+    spacing: 0.6em;
+    navWrap: false;
+    chaseFocus: true;
+
+    clipOffsetTop: 3em;
+    scrollThresholdTop: 4em;
+    scrollThresholdBottom: $ui.universeBottomHeight;
+    clipOffsetBottom: $ui.universeBottomHeight;
+    clipAlpha: 0.2;
+    clipBlur: 1;
+
+    cloner($self.model.nodes, loader, {
+      onEvent(copy, deliverRef($core.clipboard.setFromItem, $self));
+      time: 0.1;
+      effect: blend;
+      noInitialTransform: true;
+      source: select($self.type == "search",
+                     "landing_search.view",
+                     select($self.type == "landingSection",
+                            "landing_section.view",
+                            "skin://items/rect/default.view"));
+    });
+  });
+  ScrollBar("scrollable", 3em, $ui.universeBottomHeight);
+
+  widget(container_y, {
+    align: top;
+    PageHeader($self.model.metadata.title);
+  });
+});
