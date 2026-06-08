@@ -82,9 +82,13 @@ Then restart Movian. Public endpoints work without auth; auth-gated categories c
 
 ## Landing Page Categories
 
-**Public** (always have data, no auth needed):
-- Movies — Trending, Popular, Most Anticipated, Most Played
-- TV Shows — Trending, Popular, Most Anticipated, Most Played
+**Public previews** (always have data, no auth needed):
+- Movies — Trending, Most Anticipated
+- TV Shows — Trending, Most Anticipated
+
+**Public directory links under `Other lists`:**
+- Movies — Popular, Most Played
+- TV Shows — Popular, Most Played
 
 **Auth-gated** (depend on user's Trakt account data):
 - Upcoming Episodes, Upcoming Movies
@@ -92,7 +96,10 @@ Then restart Movian. Public endpoints work without auth; auth-gated categories c
 - Movies/Shows in Watchlist
 - Recently Watched Movies/Shows
 
-Each non-empty category shows up to 9 items + "See more" link.
+Each non-empty preview category shows up to 9 items + "See more" link.
+
+For the landing focus implementation, race tests, STPP paths, and GLW log
+anchors, read `references/landing-focus.md`.
 
 ## Key Test Assertions
 
@@ -101,6 +108,9 @@ Each non-empty category shows up to 9 items + "See more" link.
 3. **Poster images:** Items should have poster thumbnails, not blank placeholders.
 4. **Pagination:** "See more" navigates to full page; scrolling down loads page 2 (items 21+).
 5. **Log cleanliness:** Zero `TypeError|ReferenceError|SyntaxError` in log.
+6. **Landing focus:** After all scheduled previews complete, Search receives
+   focus. `Down` moves into the first Movies Trending card. Input sent before
+   completion prevents later auto-focus from pulling focus back.
 
 ## Scrolling the UI
 

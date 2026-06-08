@@ -2,46 +2,46 @@
   widget(container_x, {
     hidden: HIDDEN;
 
-  	focusable: FOCUSABLE;
+	focusable: FOCUSABLE;
 
-  	widget(container_z) {
-  		widget(quad, {
-  	    fhpSpill: true;
-  	    additive: true;
-  			height: 3em;
+	widget(container_z) {
+		widget(quad, {
+	    fhpSpill: true;
+	    additive: true;
+			height: 3em;
         //color: $view.posterPrimaryColor;
         color: "#212121";
-  	    alpha: 0.6 + 0.4 * iir(isNavFocused() + isPressed() + isHovered(), 4, true);
-  	  });
+	    alpha: 0.6 + 0.4 * iir(isNavFocused() + isPressed() + isHovered(), 4, true);
+	  });
 
-  		widget(container_x, {
-  			padding: [0.5em, 0.5em];
-  			spacing: 0.2em;
+		widget(container_x, {
+			padding: [0.5em, 0.5em];
+			spacing: 0.2em;
 
-  		  widget(image, {
-  	    	margin: [0.1em, 0.1em];
-  				height: 3em;
-  	    	source: ICON;
+		  widget(image, {
+		margin: [0.1em, 0.1em];
+				height: 3em;
+		source: ICON;
           color: "#0F0F0F";
           alpha: 0.5 + 0.5 * (isHovered() + isNavFocused() + isPressed());
           hidden: !(ICON);
-  	  	});
+		});
 
-  			widget(label, {
-  			  caption: TITLE;
-  				padding: [0.5em, 0];
-  	  		align: center;
-  			});
-  		});
+			widget(label, {
+			  caption: TITLE;
+				padding: [0.5em, 0];
+			align: center;
+			});
+		});
 
       widget(border, {
         border: 0.1em;
         color: "#FFFFFF";//iir(isNavFocused() + isHovered(), 4);
         alpha: 0.8 * (isHovered() + isNavFocused() + isPressed());
       });
-  	});
+	});
 
-  	onEvent(activate, EVENT);
+	onEvent(activate, EVENT);
   });
 }
 
@@ -50,11 +50,11 @@
     hidden: HIDDEN;
 
     widget(label, {
-  	  TextStyleItem();
+	  TextStyleItem();
       caption: TEXT;
       align: left;
-    	color: 0.75;
-    	sizeScale: 0.95;
+	color: 0.75;
+	sizeScale: 0.95;
     });
 
     widget(border, {
@@ -80,20 +80,20 @@
     hidden: !(TEXT && TEXT != "N/A");
 
     widget(label, {
-  	  TextStyleItem();
+	  TextStyleItem();
       caption: TITLE + " ";
       align: left;
-    	color: 0.75;
-    	sizeScale: 1.2;
+	color: 0.75;
+	sizeScale: 1.2;
     });
 
     widget(label, {
-  	  TextStyleItem();
+	  TextStyleItem();
       caption: TEXT;
       align: left;
       maxlines: 5;
-    	color: 1.0;
-    	sizeScale: 1.2;
+	color: 1.0;
+	sizeScale: 1.2;
     });
   });
 }
@@ -139,11 +139,11 @@
     margin: [1.25em, 0, 0, 0];
 
     widget(label, {
-  	  TextStyleItem();
+	  TextStyleItem();
       caption: TEXT;
       align: left;
-    	color: 0.75;
-    	sizeScale: 0.95;
+	color: 0.75;
+	sizeScale: 0.95;
     });
 
     widget(border, {
