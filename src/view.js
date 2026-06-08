@@ -254,8 +254,8 @@ exports.landingPage = function (page) {
     page.metadata.title = "Trakt - Home Page";
     page.metadata.icon = plugin.getLogoPath();
     page.metadata.glwview = Plugin.path + "views/landing_grid.view";
-    page.metadata.traktLandingReady = false;
-    page.metadata.traktUserNavigated = false;
+    page.metadata.traktLandingReady = 0;
+    page.metadata.traktUserNavigated = 0;
     page.metadata.traktFocusDelay = 0;
     page.loading = true;
 
@@ -266,7 +266,7 @@ exports.landingPage = function (page) {
 
     function landingComplete() {
         if (--landingPending === 0) {
-            page.metadata.traktLandingReady = true;
+            page.metadata.traktLandingReady = 1;
             if (parseInt(page.metadata.traktUserNavigated.toString(), 10) === 0)
                 page.metadata.traktFocusDelay = 1;
         }
