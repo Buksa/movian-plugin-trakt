@@ -15,15 +15,15 @@ widget(container_x, {
 			spacing: 0.2em;
 
 		  widget(image, {
-	    	margin: [0.1em, 0.1em];
+		margin: [0.1em, 0.1em];
 				height: $ui.size * 3;
-	    	source: $self.metadata.icon;
-	  	});
+		source: $self.metadata.icon;
+		});
 
 			widget(label, {
 			  caption: $self.metadata.title;
 				padding: [0.5em, 0];
-	  		align: center;
+			align: center;
 			});
 		});
 	});
