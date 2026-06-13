@@ -103,14 +103,18 @@ anchors, read `references/landing-focus.md`.
 
 ## Key Test Assertions
 
-1. **Items under correct header:** Each category's items appear between its separator and the next. The `beforeItem` prop in `templateList` controls positioning.
-2. **Empty categories hidden:** Categories with no data should not show separator headers.
+1. **Stable shelf order:** Landing section nodes are created before requests and
+   populated through their `data` props, so API completion order cannot reorder
+   them.
+2. **Empty categories hidden:** Landing categories with no data destroy their
+   whole section node.
 3. **Poster images:** Items should have poster thumbnails, not blank placeholders.
 4. **Pagination:** "See more" navigates to full page; scrolling down loads page 2 (items 21+).
 5. **Log cleanliness:** Zero `TypeError|ReferenceError|SyntaxError` in log.
 6. **Landing focus:** After all scheduled previews complete, Search receives
-   focus. `Down` moves into the first Movies Trending card. Input sent before
-   completion prevents later auto-focus from pulling focus back.
+   focus. `Down` moves into the first Movies Trending card, `Right/Left` stay
+   inside its `list_x`, and `Up/Down` move through the outer `list_y`. Input
+   sent before completion prevents later auto-focus from pulling focus back.
 
 ## Scrolling the UI
 

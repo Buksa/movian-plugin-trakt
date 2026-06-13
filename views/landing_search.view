@@ -1,5 +1,6 @@
 #include "skin://theme.view"
 
+// The readiness barrier arms this one-shot focus only after all shelves settle.
 onInactivity($parent.model.metadata.traktFocusDelay, {
   focus("trakt-landing-search");
 });
