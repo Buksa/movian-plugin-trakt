@@ -1,25 +1,72 @@
 widget(container_y, {
   focusable: true;
   width: select($ui.aspect > 1, 10em, 8em);
-  height: select($ui.aspect > 1, 6.5em, 5.5em);
+  height: select($ui.aspect > 1, 5.625em, 4.4em);
+  zoffset: select($view.cardActive, 10, 0);
   onEvent(activate, navOpen($self.url));
 
-  widget(container_z, {
-    height: select($ui.aspect > 1, 5.4em, 4.4em);
+  // Keep one card-local state for artwork, scaling, and the title overlay.
+  $view.cardActive = isNavFocused() || isHovered();
+  $view.showTitle = !isVoid($self.metadata.title) &&
+    ($view.cardActive || !isVoid($self.metadata.landingIcon));
 
-    widget(image, {
-      source: $self.metadata.icon ??
-        "skin://icons/ic_folder_48px.svg";
-      style: "GridBackdrop";
+  // Scale only the rendered contents so list_x geometry remains stable.
+  widget(displacement, {
+    scaling: [
+      1 + 0.06 * iir($view.cardActive, 4),
+      1 + 0.06 * iir($view.cardActive, 4),
+      1
+    ];
+
+    widget(container_z, {
+      height: select($ui.aspect > 1, 5.625em, 4.4em);
+
+      widget(quad, {
+        hidden: !isVoid($self.metadata.icon);
+        color: 0.08;
+        alpha: 0.9;
+      });
+
+      widget(image, {
+        hidden: isVoid($self.metadata.icon);
+        source: $self.metadata.icon;
+        aspectConstraint: true;
+        color: 0.85 + 0.15 * iir($view.cardActive, 4);
+      });
+
+      widget(icon, {
+        hidden: !isVoid($self.metadata.icon);
+        size: select($ui.aspect > 1, 2.8em, 2.4em);
+        source: $self.metadata.landingIcon ??
+          "skin://icons/ic_folder_48px.svg";
+        alpha: 0.45 + 0.35 * iir($view.cardActive, 4);
+      });
+
+      // The background and title fade together, leaving no empty overlay.
+      widget(container_y, {
+        align: bottom;
+        alpha: iir($view.showTitle, 6);
+
+        widget(container_z, {
+          widget(quad, {
+            color: 0;
+            alpha: 0.65;
+          });
+
+          widget(container_y, {
+            padding: [0.35em, 0.15em, 0.35em, 0.15em];
+
+            widget(label, {
+              caption: $self.metadata.title;
+              size: 0.9em;
+              ellipsize: true;
+              maxlines: 2;
+              italic: true;
+              align: center;
+            });
+          });
+        });
+      });
     });
-
-    widget(border, {
-      style: "GridBorder";
-    });
-  });
-
-  widget(label, {
-    style: "GridLabel";
-    caption: $self.metadata.title;
   });
 });

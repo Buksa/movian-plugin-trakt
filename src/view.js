@@ -218,12 +218,13 @@ function landingCard(item, itemType) {
     return null;
 }
 
-function landingLinkCard(url, title) {
+function landingLinkCard(url, title, landingIcon) {
     return {
         url: url,
         type: "directory",
         metadata: {
-            title: title
+            title: title,
+            landingIcon: landingIcon
         }
     };
 }
@@ -288,7 +289,8 @@ function loadLandingSection(page, section, loader, config, onComplete) {
                     (pagination && (pagination.hasNext ||
                         pagination.itemCount > cards.length));
                 if (config.moreItemsUri && hasMore)
-                    cards.push(landingLinkCard(config.moreItemsUri, "See more"));
+                    cards.push(landingLinkCard(config.moreItemsUri, "See more",
+                        "skin://icons/ic_arrow_forward_48px.svg"));
 
                 section.root.data = cards;
                 complete();
@@ -535,18 +537,23 @@ exports.landingPage = function (page) {
     });
 
     var otherLists = [
-        landingLinkCard(PREFIX + ":movies:popular", 'Movies - Most Popular'),
-        landingLinkCard(PREFIX + ":movies:played", 'Movies - Most Played (Week)'),
-        landingLinkCard(PREFIX + ":shows:popular", 'TV Shows - Most Popular'),
-        landingLinkCard(PREFIX + ":shows:played", 'TV Shows - Most Played (Week)')
+        landingLinkCard(PREFIX + ":movies:popular", 'Movies - Most Popular',
+            "skin://icons/ic_movie_48px.svg"),
+        landingLinkCard(PREFIX + ":movies:played",
+            'Movies - Most Played (Week)', "skin://icons/ic_movie_48px.svg"),
+        landingLinkCard(PREFIX + ":shows:popular", 'TV Shows - Most Popular',
+            "skin://icons/ic_tv_48px.svg"),
+        landingLinkCard(PREFIX + ":shows:played",
+            'TV Shows - Most Played (Week)', "skin://icons/ic_tv_48px.svg")
     ];
     if (isAuthenticated) {
         otherLists.push(
             landingLinkCard(PREFIX + ":recommendations:movies",
-                'Movies - Recommended'),
+                'Movies - Recommended', "skin://icons/ic_movie_48px.svg"),
             landingLinkCard(PREFIX + ":recommendations:shows",
-                'TV Shows - Recommended'),
-            landingLinkCard(PREFIX + ":my:lists", 'My Custom Lists')
+                'TV Shows - Recommended', "skin://icons/ic_tv_48px.svg"),
+            landingLinkCard(PREFIX + ":my:lists", 'My Custom Lists',
+                "skin://icons/ic_list_48px.svg")
         );
     }
     createLandingSection(page, 'Other lists', otherLists);

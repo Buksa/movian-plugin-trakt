@@ -2,6 +2,7 @@
 #import "skin://styles/style_grid.view"
 
 widget(container_z, {
+  // Disarm delayed Search focus without consuming the user's event.
   onEvent(up, {
     $self.model.metadata.traktUserNavigated = 1;
     $self.model.metadata.traktFocusDelay = 0;
@@ -23,6 +24,7 @@ widget(container_z, {
     $self.model.metadata.traktFocusDelay = 0;
   }, true, false, true);
 
+  // The outer list owns vertical navigation between Search and shelves.
   widget(list_y, {
     id: "scrollable";
     margin: [1em, 0, 1em, 0];
