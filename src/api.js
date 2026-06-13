@@ -77,15 +77,6 @@ var Api = function() {
                 opts.debug = service.debug;
 
                 http.request(url, opts, function(err, result) {
-                    if (!result) {
-                        var requestError = err ||
-                            new Error("API request returned no response");
-                        log.e("HTTP Error:");
-                        log.e(requestError);
-                        callback(null, null, requestError);
-                        return;
-                    }
-
                     if (result) {
                         var fullUrl = api.API_BASE_URL + uri;
                         if (opts.args) {
@@ -158,7 +149,6 @@ var Api = function() {
                 log.e("API call failed:");
                 log.e(arguments);
                 log.e(e);
-                callback(null, null, e);
             }
         }
     };

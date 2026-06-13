@@ -238,10 +238,15 @@ function createLandingSection(page, title, cards) {
 function loadLandingSection(page, section, loader, config, onComplete) {
     config = config || {};
     var completed = false;
+    var timeout = null;
 
     function complete() {
         if (completed) return;
         completed = true;
+        if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
         onComplete();
     }
 
@@ -249,6 +254,14 @@ function loadLandingSection(page, section, loader, config, onComplete) {
         section.destroy();
         complete();
     }
+
+    // Api.call does not callback when transport fails before a response exists.
+    timeout = setTimeout(function() {
+        timeout = null;
+        if (completed) return;
+        log.d("Removing landing section after request timeout.");
+        removeSection();
+    }, 20000);
 
     try {
         loader(function(data, pagination, error) {
